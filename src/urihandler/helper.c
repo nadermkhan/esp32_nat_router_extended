@@ -1,43 +1,111 @@
 #include "helper.h"
 #include <ctype.h>
+#include <stdbool.h>
+#include <string.h>
 
 static const char *TAG = "urihelper";
 
-void preprocess_string(char *str)
-{
-    char *p, *q;
 
-    for (p = q = str; *p != 0; p++)
-    {
-        if (*(p) == '%' && *(p + 1) != 0 && *(p + 2) != 0)
-        {
-            // quoted hex
-            uint8_t a;
+// Check if a byte is a valid UTF-8 continuation byte
+bool is_utf8_continuation(uint8_t byte) {
+    return (byte & 0xC0) == 0x80;
+}
+
+// Validate UTF-8 sequence
+bool is_valid_utf8_sequence(const uint8_t *bytes, size_t len) {
+    if (len == 0) return false;
+    
+    uint8_t first = bytes[0];
+    
+    // ASCII (1 byte)
+    if (first <= 0x7F) {
+        return len == 1;
+    }
+    // 2-byte sequence
+    else if ((first & 0xE0) == 0xC0) {
+        return len == 2 && is_utf8_continuation(bytes[1]);
+    }
+    // 3-byte sequence  
+    else if ((first & 0xF0) == 0xE0) {
+        return len == 3 && is_utf8_continuation(bytes[1]) && is_utf8_continuation(bytes[2]);
+    }
+    // 4-byte sequence
+    else if ((first & 0xF8) == 0xF0) {
+        return len == 4 && is_utf8_continuation(bytes[1]) && 
+               is_utf8_continuation(bytes[2]) && is_utf8_continuation(bytes[3]);
+    }
+    
+    return false;
+}
+
+void preprocess_string(char *str) {
+    char *p, *q;
+    uint8_t utf8_buffer[4];
+    int utf8_len = 0;
+
+    for (p = q = str; *p != 0; p++) {
+        if (*(p) == '%' && *(p + 1) != 0 && *(p + 2) != 0) {
+            // Decode hex byte
+            uint8_t byte;
             p++;
             if (*p <= '9')
-                a = *p - '0';
+                byte = *p - '0';
             else
-                a = toupper((unsigned char)*p) - 'A' + 10;
-            a <<= 4;
+                byte = toupper((unsigned char)*p) - 'A' + 10;
+            byte <<= 4;
             p++;
             if (*p <= '9')
-                a += *p - '0';
+                byte += *p - '0';
             else
-                a += toupper((unsigned char)*p) - 'A' + 10;
-            *q++ = a;
+                byte += toupper((unsigned char)*p) - 'A' + 10;
+            
+            // Add to UTF-8 buffer
+            utf8_buffer[utf8_len++] = byte;
+            
+            // Check if we have a complete UTF-8 sequence
+            if (utf8_len == 1 && byte <= 0x7F) {
+                // ASCII character - complete
+                *q++ = byte;
+                utf8_len = 0;
+            } else if (utf8_len == 2 && (utf8_buffer[0] & 0xE0) == 0xC0) {
+                // 2-byte sequence complete
+                if (is_valid_utf8_sequence(utf8_buffer, 2)) {
+                    *q++ = utf8_buffer[0];
+                    *q++ = utf8_buffer[1];
+                }
+                utf8_len = 0;
+            } else if (utf8_len == 3 && (utf8_buffer[0] & 0xF0) == 0xE0) {
+                // 3-byte sequence complete
+                if (is_valid_utf8_sequence(utf8_buffer, 3)) {
+                    *q++ = utf8_buffer[0];
+                    *q++ = utf8_buffer[1];
+                    *q++ = utf8_buffer[2];
+                }
+                utf8_len = 0;
+            } else if (utf8_len == 4 && (utf8_buffer[0] & 0xF8) == 0xF0) {
+                // 4-byte sequence complete
+                if (is_valid_utf8_sequence(utf8_buffer, 4)) {
+                    *q++ = utf8_buffer[0];
+                    *q++ = utf8_buffer[1];
+                    *q++ = utf8_buffer[2];
+                    *q++ = utf8_buffer[3];
+                }
+                utf8_len = 0;
+            }
+            // If utf8_len > 4 or invalid sequence, reset
+            if (utf8_len > 4) {
+                utf8_len = 0;
+            }
         }
-        else if (*(p) == '+')
-        {
+        else if (*(p) == '+') {
             *q++ = ' ';
         }
-        else
-        {
+        else {
             *q++ = *p;
         }
     }
     *q = '\0';
 }
-
 void readUrlParameterIntoBuffer(char *parameterString, char *parameter, char *buffer, size_t paramLength)
 {
     if (httpd_query_key_value(parameterString, parameter, buffer, paramLength) == ESP_OK)
