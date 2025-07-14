@@ -9,6 +9,7 @@ This is an extension of the great work of [martin-ger's ESP32 NAT Router-project
 ## Features / Usage scenarios
 - Extend range of WiFi network (Repeater)
 - Additional network for guests
+- Added Unicode Support for naming SSID
 - Portable usage with a small, low power device (battery powered)
 - [Bypass restrictions](docs/advanced.md#advanced-configuration) in public WiFis, like device and rate limit
 - Scanning for APs (s. [limitations](#wifi-scanning-limitation))
