@@ -41,8 +41,9 @@ esp_err_t api_clients_get_handler(httpd_req_t *req)
             esp_ip4addr_ntoa(&(station.ip), str_ip, IP4ADDR_STRLEN_MAX);
 
             char currentMAC[18];
-            sprintf(currentMAC, "%02x:%02x:%02x:%02x:%02x:%02x", 
-                                       station.mac[3], station.mac[4], station.mac[5]);
+sprintf(currentMAC, "%02x:%02x:%02x:%02x:%02x:%02x",
+        (unsigned int)station.mac[0], (unsigned int)station.mac[1], (unsigned int)station.mac[2],
+        (unsigned int)station.mac[3], (unsigned int)station.mac[4], (unsigned int)station.mac[5]);
 
             cJSON_AddNumberToObject(client, "id", i + 1);
             cJSON_AddStringToObject(client, "ip", str_ip);
