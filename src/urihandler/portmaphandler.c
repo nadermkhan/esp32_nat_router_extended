@@ -1,94 +1,69 @@
 #include "handler.h"
 #include "timer.h"
-
 #include <sys/param.h>
-#include <timer.h>
-
 #include "nvs.h"
 #include "cmd_nvs.h"
 #include "router_globals.h"
 #include "esp_wifi.h"
 #include "esp_wifi_ap_get_sta_list.h"
+#include "cJSON.h"
 
 static const char *TAG = "PortMapHandler";
-const char *PORTMAP_ROW_TEMPLATE = "<tr> <td>%s</td> <td>%hu</td> <td>%s</td> <td>%hu</td> <td> <form action='/portmap' method='POST'><input type='hidden' name='func' value='del'><input type='hidden' name='entry' value='%s'> <button title='Remove' name='remove' class='btn btn-light'> <svg version='2.0' width='16' height='16'> <use href='#trash' /> </svg> </form> </td></tr>";
 
-esp_err_t portmap_get_handler(httpd_req_t *req)
+esp_err_t api_portmap_get_handler(httpd_req_t *req)
 {
     if (isLocked())
     {
-        return redirectToLock(req);
+        return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Locked");
     }
-    ESP_LOGI(TAG, "Requesting portmap page");
-    httpd_req_to_sockfd(req);
 
-    // send first part
-    extern const unsigned char portmap_start[] asm("_binary_portmap_start_html_start");
-    ESP_LOGI(TAG, "Sending portmap start part");
-    ESP_ERROR_CHECK(httpd_resp_send_chunk(req, (const char *)portmap_start, HTTPD_RESP_USE_STRLEN));
+    httpd_resp_set_type(req, "application/json");
+    closeHeader(req);
 
-    // send entries
-    bool entriesSent = false;
+    cJSON *json = cJSON_CreateObject();
+    cJSON *entries_array = cJSON_CreateArray();
+
     for (int i = 0; i < PORTMAP_MAX; i++)
     {
         if (portmap_tab[i].valid)
         {
-            char *protocol;
-            if (portmap_tab[i].proto == PROTO_TCP)
-            {
-                protocol = "TCP";
-            }
-            else
-            {
-                protocol = "UDP";
-            }
+            cJSON *entry = cJSON_CreateObject();
+            
+            const char *protocol = (portmap_tab[i].proto == PROTO_TCP) ? "TCP" : "UDP";
+            cJSON_AddStringToObject(entry, "protocol", protocol);
+            cJSON_AddNumberToObject(entry, "externalPort", portmap_tab[i].mport);
+            
             esp_ip4_addr_t addr;
             addr.addr = portmap_tab[i].daddr;
             char ip_str[16];
             sprintf(ip_str, IPSTR, IP2STR(&addr));
+            cJSON_AddStringToObject(entry, "internalIP", ip_str);
+            cJSON_AddNumberToObject(entry, "internalPort", portmap_tab[i].dport);
+            
             char delParam[50];
             sprintf(delParam, "%s_%hu_%s_%hu", protocol, portmap_tab[i].mport, ip_str, portmap_tab[i].dport);
-
-            char *template = malloc(strlen(PORTMAP_ROW_TEMPLATE) + 12 + strlen(ip_str) + strlen(protocol) + strlen(delParam));
-
-            sprintf(template, PORTMAP_ROW_TEMPLATE, protocol, portmap_tab[i].mport, ip_str, portmap_tab[i].dport, delParam);
-
-            ESP_LOGI(TAG, "Sending portmap entry part");
-            ESP_ERROR_CHECK(httpd_resp_send_chunk(req, template, HTTPD_RESP_USE_STRLEN));
-            entriesSent = true;
-            free(template);
+            cJSON_AddStringToObject(entry, "id", delParam);
+            
+            cJSON_AddItemToArray(entries_array, entry);
         }
     }
-    if (!entriesSent)
-    {
-        ESP_LOGI(TAG, "Sending no entry part");
-        const char *template = "<tr><td colspan='5' class='text-warning'>No portmap entries found</td></tr>";
-        ESP_ERROR_CHECK(httpd_resp_send_chunk(req, template, HTTPD_RESP_USE_STRLEN));
-    }
 
-    // send end
-
-    extern const char portmap_end_start[] asm("_binary_portmap_end_html_start");
-    extern const char portmap_end[] asm("_binary_portmap_end_html_end");
-    const size_t portmap_html_size = (portmap_end - portmap_end_start);
+    cJSON_AddItemToObject(json, "entries", entries_array);
+    
+    // Add IP prefix for frontend
     char *defaultIP = getDefaultIPByNetmask();
-    char ip_prefix[strlen(defaultIP) - 1];
-    strncpy(ip_prefix, defaultIP, strlen(defaultIP) - 1); // Without the last part
+    char ip_prefix[strlen(defaultIP)];
+    strncpy(ip_prefix, defaultIP, strlen(defaultIP) - 1);
     ip_prefix[strlen(defaultIP) - 1] = '\0';
-    char *portmap_page = malloc(portmap_html_size + strlen(ip_prefix));
-    sprintf(portmap_page, portmap_end_start, ip_prefix);
-    ESP_LOGI(TAG, "Sending portmap end part");
-
-    ESP_ERROR_CHECK(httpd_resp_send_chunk(req, portmap_page, HTTPD_RESP_USE_STRLEN));
-
-    free(portmap_page);
+    cJSON_AddStringToObject(json, "ipPrefix", ip_prefix);
     free(defaultIP);
 
-    // Finalize
-    closeHeader(req);
-    esp_err_t ret = httpd_resp_send_chunk(req, NULL, 0);
-
-    ESP_LOGI(TAG, "Requesting portmap page");
+    char *json_string = cJSON_Print(json);
+    esp_err_t ret = httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+    
+    free(json_string);
+    cJSON_Delete(json);
+    ESP_LOGI(TAG, "API: Requesting portmap data");
     return ret;
 }
 
@@ -187,19 +162,22 @@ void delPortmapEntry(char *urlContent)
     del_portmap(tcp_udp, ext_port, int_ip, int_port);
 }
 
-esp_err_t portmap_post_handler(httpd_req_t *req)
+esp_err_t api_portmap_post_handler(httpd_req_t *req)
 {
     if (isLocked())
     {
-        return redirectToLock(req);
+        return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Locked");
     }
-    httpd_req_to_sockfd(req);
 
     size_t content_len = req->content_len;
-    char buf[content_len];
+    char buf[content_len + 1];
+
+    httpd_resp_set_type(req, "application/json");
+    cJSON *json = cJSON_CreateObject();
 
     if (fill_post_buffer(req, buf, content_len) == ESP_OK)
     {
+        buf[content_len] = '\0';
         char funcParam[4];
 
         ESP_LOGI(TAG, "getting content %s", buf);
@@ -209,14 +187,30 @@ esp_err_t portmap_post_handler(httpd_req_t *req)
         if (strcmp(funcParam, "add") == 0)
         {
             addPortmapEntry(buf);
+            cJSON_AddBoolToObject(json, "success", true);
+            cJSON_AddStringToObject(json, "message", "Port mapping added successfully");
         }
-        if (strcmp(funcParam, "del") == 0)
+        else if (strcmp(funcParam, "del") == 0)
         {
             delPortmapEntry(buf);
+            cJSON_AddBoolToObject(json, "success", true);
+            cJSON_AddStringToObject(json, "message", "Port mapping deleted successfully");
+        }
+        else
+        {
+            cJSON_AddBoolToObject(json, "success", false);
+            cJSON_AddStringToObject(json, "message", "Invalid function parameter");
         }
     }
+    else
+    {
+        cJSON_AddBoolToObject(json, "success", false);
+        cJSON_AddStringToObject(json, "message", "Failed to read request data");
+    }
 
-    httpd_resp_set_status(req, "302 Found");
-    httpd_resp_set_hdr(req, "Location", "/portmap");
-    return httpd_resp_send(req, NULL, 0);
+    char *json_string = cJSON_Print(json);
+    esp_err_t ret = httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+    free(json_string);
+    cJSON_Delete(json);
+    return ret;
 }

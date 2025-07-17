@@ -1,72 +1,64 @@
 #include "handler.h"
 #include "timer.h"
-
 #include <sys/param.h>
-#include <timer.h>
-
 #include "nvs.h"
 #include "cmd_nvs.h"
 #include "router_globals.h"
 #include "esp_wifi.h"
 #include "esp_wifi_ap_get_sta_list.h"
+#include "cJSON.h"
 
 static const char *TAG = "ClientsHandler";
 
-const char *CLIENT_TEMPLATE = "<tr><td>%i</td><td>%s</td><td style='text-transform: uppercase;'>%s</td></tr>";
-
-esp_err_t clients_download_get_handler(httpd_req_t *req)
+esp_err_t api_clients_get_handler(httpd_req_t *req)
 {
     if (isLocked())
     {
-        return redirectToLock(req);
+        return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Locked");
     }
+
+    httpd_resp_set_type(req, "application/json");
+    closeHeader(req);
 
     wifi_sta_list_t wifi_sta_list;
     wifi_sta_mac_ip_list_t adapter_sta_list;
     memset(&wifi_sta_list, 0, sizeof(wifi_sta_list));
     memset(&adapter_sta_list, 0, sizeof(adapter_sta_list));
     esp_wifi_ap_get_sta_list(&wifi_sta_list);
-
     esp_wifi_ap_get_sta_list_with_ip(&wifi_sta_list, &adapter_sta_list);
 
-    char result[1000];
-    strcpy(result, "");
+    cJSON *json = cJSON_CreateObject();
+    cJSON *clients_array = cJSON_CreateArray();
+
     if (wifi_sta_list.num > 0)
     {
         for (int i = 0; i < adapter_sta_list.num; i++)
         {
-
-            char *template = malloc(strlen(CLIENT_TEMPLATE) + 100);
+            cJSON *client = cJSON_CreateObject();
             esp_netif_pair_mac_ip_t station = adapter_sta_list.sta[i];
 
             char str_ip[16];
             esp_ip4addr_ntoa(&(station.ip), str_ip, IP4ADDR_STRLEN_MAX);
 
             char currentMAC[18];
-            sprintf(currentMAC, "%x:%x:%x:%x:%x:%x", station.mac[0], station.mac[1], station.mac[2], station.mac[3], station.mac[4], station.mac[5]);
+            sprintf(currentMAC, "%02x:%02x:%02x:%02x:%02x:%02x", 
+                                       station.mac[3], station.mac[4], station.mac[5]);
 
-            sprintf(template, CLIENT_TEMPLATE, i + 1, str_ip, currentMAC);
-            strcat(result, template);
+            cJSON_AddNumberToObject(client, "id", i + 1);
+            cJSON_AddStringToObject(client, "ip", str_ip);
+            cJSON_AddStringToObject(client, "mac", currentMAC);
+            cJSON_AddItemToArray(clients_array, client);
         }
     }
-    else
-    {
-        strcat(result, "<tr class='text-danger'><td colspan='3'>No clients connected</td></tr>");
-    }
 
-    httpd_req_to_sockfd(req);
-    extern const char clients_start[] asm("_binary_clients_html_start");
-    extern const char clients_end[] asm("_binary_clients_html_end");
-    const size_t clients_html_size = (clients_end - clients_start);
+    cJSON_AddItemToObject(json, "clients", clients_array);
+    cJSON_AddNumberToObject(json, "count", adapter_sta_list.num);
 
-    int size = clients_html_size + strlen(result);
-    char *clients_page = malloc(size - 2);
-    sprintf(clients_page, clients_start, result);
-
-    closeHeader(req);
-
-    esp_err_t ret = httpd_resp_send(req, clients_page, HTTPD_RESP_USE_STRLEN);
-    free(clients_page);
-    ESP_LOGI(TAG, "Requesting clients page");
+    char *json_string = cJSON_Print(json);
+    esp_err_t ret = httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+    
+    free(json_string);
+    cJSON_Delete(json);
+    ESP_LOGI(TAG, "API: Requesting clients data");
     return ret;
 }

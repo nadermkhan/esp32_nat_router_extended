@@ -1,4 +1,3 @@
-
 #include "handler.h"
 #include <esp_ota_ops.h>
 #include <esp_https_ota.h>
@@ -6,6 +5,7 @@
 #include <sys/param.h>
 #include "timer.h"
 #include <esp_http_client.h>
+#include "cJSON.h"
 
 static const char *TAG = "OTA";
 
@@ -17,8 +17,7 @@ bool finished = false;
 bool otaRunning = false;
 
 char chip_type[30];
-
-char otalog[400] = "";
+char otalog[2000] = "";
 char resultLog[110] = "";
 char progressLabel[20] = "";
 
@@ -33,18 +32,14 @@ static const char *DEFAULT_URL_CANARY = "https://raw.githubusercontent.com/dchri
 void appendToLog(const char *message)
 {
     char tmp[500] = "";
-
-    sprintf(tmp, "<tr><th>%s</th></tr>", message);
-
+    sprintf(tmp, "%s\n", message);
     strcat(otalog, tmp);
     ESP_LOGI(TAG, "%s", message);
 }
 
 void setResultLog(const char *message, const char *cssClass)
 {
-
-    sprintf(resultLog, "<tr><th class=\"%s\">%s</th></tr>", cssClass, message);
-
+    sprintf(resultLog, "%s", message);
     ESP_LOGI(TAG, "%s", message);
 }
 
@@ -65,7 +60,6 @@ esp_err_t ota_event_event_handler(esp_http_client_event_t *evt)
     switch (evt->event_id)
     {
     case HTTP_EVENT_ON_DATA:
-
         data_length = data_length + ((int64_t)evt->data_len * 1000);
         if (content_length != 0)
         {
@@ -79,12 +73,10 @@ esp_err_t ota_event_event_handler(esp_http_client_event_t *evt)
                 ESP_LOGI(TAG, "%s", progressLabel);
             }
         }
-
         break;
     case HTTP_EVENT_ERROR:
         return ESP_FAIL;
     case HTTP_EVENT_ON_HEADER:
-
         char *endptr;
         if (strcasecmp("Content-Length", evt->header_key) == 0)
         {
@@ -101,7 +93,6 @@ esp_err_t ota_event_event_handler(esp_http_client_event_t *evt)
 
 esp_err_t version_event_handler(esp_http_client_event_t *evt)
 {
-
     http_handler_data_t *handler_data = (http_handler_data_t *)evt->user_data;
 
     switch (evt->event_id)
@@ -134,14 +125,12 @@ const char *get_default_url()
     {
         return DEFAULT_URL_CANARY;
     }
-
     return DEFAULT_URL;
 }
 
 void getOtaUrl(char *url, char *label)
 {
     char *customUrl = NULL;
-    // Assuming the function get_config_param_str is defined elsewhere
     get_config_param_str("ota_url", &customUrl);
     if (customUrl != NULL && strlen(customUrl) > 0)
     {
@@ -191,11 +180,11 @@ void ota_task(void *pvParameter)
     esp_err_t ret = esp_https_ota(&ota_config);
     if (ret == ESP_OK)
     {
-        setResultLog("OTA update succesful. The device is restarting.", "text-success");
+        setResultLog("OTA update successful. The device is restarting.", "text-success");
     }
     else
     {
-        setResultLog("Error occured. The device is restarting ", "text-danger");
+        setResultLog("Error occurred. The device is restarting ", "text-danger");
     }
     finished = true;
     vTaskDelete(NULL);
@@ -204,13 +193,6 @@ void ota_task(void *pvParameter)
 void start_ota_update()
 {
     xTaskCreate(&ota_task, "ota_task", 8192, NULL, 5, NULL);
-}
-
-void appendToChangelog(const char *entry)
-{
-    char tmp[500] = "";
-    sprintf(tmp, "<li>%s</li>", entry);
-    strcat(changelog, tmp);
 }
 
 void updateVersion()
@@ -232,8 +214,8 @@ void updateVersion()
 
     if (err == ESP_OK && handler_data->http_code == 200)
     {
-        ESP_LOGI(TAG, "Version and changelog download succesful. File size is: %d Bytes", file_size);
-        file_buffer[file_size - 1] = '\0'; // Terminate the string on the correct length
+        ESP_LOGI(TAG, "Version and changelog download successful. File size is: %d Bytes", file_size);
+        file_buffer[file_size - 1] = '\0';
         char *rest = file_buffer;
         char *line;
         int lineNumber = 1;
@@ -245,9 +227,11 @@ void updateVersion()
             case 1:
                 strcpy(latest_version, line);
                 break;
-
             default:
-                appendToChangelog(line);
+                if (strlen(changelog) + strlen(line) + 1 < sizeof(changelog)) {
+                    strcat(changelog, line);
+                    strcat(changelog, "\n");
+                }
                 break;
             }
             lineNumber++;
@@ -261,136 +245,120 @@ void updateVersion()
     {
         ESP_LOGE(TAG, "Error on download: %s -> %d\n", esp_err_to_name(err), handler_data->http_code);
         snprintf(latest_version, sizeof(latest_version), ERROR_RETRIEVING, handler_data->http_code);
-        appendToChangelog(latest_version);
+        strcpy(changelog, latest_version);
     }
     esp_http_client_cleanup(client);
 }
-esp_err_t otalog_get_handler(httpd_req_t *req)
-{
 
+esp_err_t api_ota_get_handler(httpd_req_t *req)
+{
     if (isLocked())
     {
-        return redirectToLock(req);
-    }
-    if (!otaRunning)
-    {
-        httpd_resp_set_status(req, "302 Found");
-        httpd_resp_set_hdr(req, "Location", "/");
-        return httpd_resp_send(req, NULL, 0);
+        return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Locked");
     }
 
-    httpd_req_to_sockfd(req);
-
-    extern const char otalog_start[] asm("_binary_otalog_html_start");
-    extern const char otalog_end[] asm("_binary_otalog_html_end");
-    const size_t otalog_html_size = (otalog_end - otalog_start);
-    char *otaLogRedirect = "1; url=/otalog";
-
-    if (finished)
-    {
-        otaLogRedirect = "3; url=/apply";
-        restartByTimerinS(3);
-    }
-    char url[200];
-    char label[20];
-
-    getOtaUrl(url, label);
-
-    char *otalog_page = malloc(otalog_html_size + strlen(otalog) + strlen(otaLogRedirect) + strlen(resultLog) + strlen(progressLabel) + 50 + strlen(label));
-    sprintf(otalog_page, otalog_start, otaLogRedirect, progressInt, progressLabel, label, otalog, resultLog);
-
+    httpd_resp_set_type(req, "application/json");
     closeHeader(req);
-
-    ESP_LOGI(TAG, "Requesting OTA-Log page");
-
-    esp_err_t ret = httpd_resp_send(req, otalog_page, HTTPD_RESP_USE_STRLEN);
-    return ret;
-}
-
-esp_err_t otalog_post_handler(httpd_req_t *req)
-{
-    if (isLocked())
-    {
-        return redirectToLock(req);
-    }
-    resultLog[0] = '\0';
-    otalog[0] = '\0';
-    otaRunning = true;
-    start_ota_update();
-
-    httpd_resp_set_status(req, "302 Found");
-    httpd_resp_set_hdr(req, "Location", "/otalog");
-    return httpd_resp_send(req, NULL, 0);
-}
-
-esp_err_t ota_download_get_handler(httpd_req_t *req)
-{
-    if (isLocked())
-    {
-        return redirectToLock(req);
-    }
-
-    httpd_req_to_sockfd(req);
-    extern const char ota_start[] asm("_binary_ota_html_start");
-    extern const char ota_end[] asm("_binary_ota_html_end");
-    const size_t ota_html_size = (ota_end - ota_start);
 
     if (strlen(latest_version) == 0)
     {
         strcpy(latest_version, NOT_DETERMINED);
         changelog[0] = '\0';
-        appendToChangelog(NOT_DETERMINED);
+        strcat(changelog, NOT_DETERMINED);
     }
 
     determineChipType(chip_type);
-    ESP_LOGD(TAG, "Chip Type: %s\n", chip_type);
     char customUrl[200];
     char label[20];
     getOtaUrl(customUrl, label);
     const char *project_version = get_project_version();
-    char *ota_page = malloc(ota_html_size + strlen(project_version) + strlen(customUrl) + strlen(latest_version) + strlen(chip_type) + strlen(label) + strlen(changelog));
-    sprintf(ota_page, ota_start, project_version, latest_version, changelog, customUrl, label, chip_type);
 
-    closeHeader(req);
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "currentVersion", project_version);
+    cJSON_AddStringToObject(json, "latestVersion", latest_version);
+    cJSON_AddStringToObject(json, "changelog", changelog);
+    cJSON_AddStringToObject(json, "otaUrl", customUrl);
+    cJSON_AddStringToObject(json, "buildLabel", label);
+    cJSON_AddStringToObject(json, "chipType", chip_type);
+    cJSON_AddBoolToObject(json, "otaRunning", otaRunning);
 
-    ESP_LOGI(TAG, "Requesting OTA page with additional size of %d", strlen(ota_page));
-
-    esp_err_t ret = httpd_resp_send(req, ota_page, HTTPD_RESP_USE_STRLEN);
-    free(ota_page);
+    char *json_string = cJSON_Print(json);
+    esp_err_t ret = httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+    free(json_string);
+    cJSON_Delete(json);
     return ret;
 }
 
-esp_err_t ota_post_handler(httpd_req_t *req)
+esp_err_t api_ota_check_post_handler(httpd_req_t *req)
 {
     if (isLocked())
     {
-        return redirectToLock(req);
+        return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Locked");
     }
-
-    int ret, remaining = req->content_len;
-    char buf[req->content_len];
-
-    while (remaining > 0)
-    {
-        /* Read the data for the request */
-        if ((ret = httpd_req_recv(req, buf, MIN(remaining, sizeof(buf)))) <= 0)
-        {
-            if (ret == HTTPD_SOCK_ERR_TIMEOUT)
-            {
-                continue;
-            }
-            ESP_LOGE(TAG, "Timeout occured");
-            return ESP_FAIL;
-        }
-
-        remaining -= ret;
-    }
-    buf[req->content_len] = '\0';
-    ESP_LOGI(TAG, "Getting with post: %s", buf);
 
     updateVersion();
 
-    httpd_resp_set_status(req, "302 Found");
-    httpd_resp_set_hdr(req, "Location", "/ota");
-    return httpd_resp_send(req, NULL, 0);
+    httpd_resp_set_type(req, "application/json");
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddBoolToObject(json, "success", true);
+    cJSON_AddStringToObject(json, "latestVersion", latest_version);
+    cJSON_AddStringToObject(json, "changelog", changelog);
+
+    char *json_string = cJSON_Print(json);
+    esp_err_t ret = httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+    free(json_string);
+    cJSON_Delete(json);
+    return ret;
+}
+
+esp_err_t api_ota_start_post_handler(httpd_req_t *req)
+{
+    if (isLocked())
+    {
+        return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Locked");
+    }
+
+    resultLog[0] = '\0';
+    otalog[0] = '\0';
+    otaRunning = true;
+    start_ota_update();
+
+    httpd_resp_set_type(req, "application/json");
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddBoolToObject(json, "success", true);
+    cJSON_AddStringToObject(json, "message", "OTA update started");
+
+    char *json_string = cJSON_Print(json);
+    esp_err_t ret = httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+    free(json_string);
+    cJSON_Delete(json);
+    return ret;
+}
+
+esp_err_t api_ota_status_get_handler(httpd_req_t *req)
+{
+    if (isLocked())
+    {
+        return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Locked");
+    }
+
+    httpd_resp_set_type(req, "application/json");
+    cJSON *json = cJSON_CreateObject();
+    
+    cJSON_AddBoolToObject(json, "otaRunning", otaRunning);
+    cJSON_AddBoolToObject(json, "finished", finished);
+    cJSON_AddNumberToObject(json, "progress", progressInt);
+    cJSON_AddStringToObject(json, "progressLabel", progressLabel);
+    cJSON_AddStringToObject(json, "log", otalog);
+    cJSON_AddStringToObject(json, "result", resultLog);
+
+    if (finished) {
+        restartByTimerinS(3);
+    }
+
+    char *json_string = cJSON_Print(json);
+    esp_err_t ret = httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+    free(json_string);
+    cJSON_Delete(json);
+    return ret;
 }

@@ -9,6 +9,7 @@
 #include "cmd_nvs.h"
 #include "router_globals.h"
 #include "esp_wifi.h"
+#include "cJSON.h"
 
 static const char *TAG = "ApplyHandler";
 
@@ -266,6 +267,7 @@ void applyAdvancedConfig(char *buf)
                     esp_ip4addr_ntoa(addr, customDnsParam, 16);
                     ESP_LOGI(TAG, "DNS set to: %s", customDnsParam);
                     ESP_ERROR_CHECK(nvs_set_str(nvs, "custom_dns", customDnsParam));
+                    free(addr);
                 }
             }
             else
@@ -370,7 +372,7 @@ esp_err_t apply_get_handler(httpd_req_t *req)
     {
         return redirectToLock(req);
     }
-    extern const char apply_start[] asm("_binary_apply_html_start");
+        extern const char apply_start[] asm("_binary_apply_html_start");
     extern const char apply_end[] asm("_binary_apply_html_end");
     ESP_LOGI(TAG, "Requesting apply page");
     closeHeader(req);
@@ -384,6 +386,7 @@ esp_err_t apply_get_handler(httpd_req_t *req)
 
     return httpd_resp_send(req, apply_page, HTTPD_RESP_USE_STRLEN);
 }
+
 esp_err_t apply_post_handler(httpd_req_t *req)
 {
     if (isLocked())
@@ -440,4 +443,117 @@ esp_err_t apply_post_handler(httpd_req_t *req)
     restartByTimerinS(1);
 
     return apply_get_handler(req);
+}
+
+// New API endpoints for React SPA
+esp_err_t api_apply_post_handler(httpd_req_t *req)
+{
+    if (isLocked())
+    {
+        return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Locked");
+    }
+
+    int remaining = req->content_len;
+    int ret = 0;
+    int bufferLength = req->content_len;
+    ESP_LOGI(TAG, "API: Content length  => %d", req->content_len);
+    char buf[100];
+    char content[bufferLength + 1];
+    strcpy(content, "");
+
+    while (remaining > 0)
+    {
+        if ((ret = httpd_req_recv(req, buf, MIN(remaining, sizeof(buf)))) <= 0)
+        {
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT)
+            {
+                continue;
+            }
+            ESP_LOGE(TAG, "Timeout occurred %d", ret);
+            httpd_resp_set_type(req, "application/json");
+            cJSON *json = cJSON_CreateObject();
+            cJSON_AddBoolToObject(json, "success", false);
+            cJSON_AddStringToObject(json, "message", "Request timeout");
+            char *json_string = cJSON_Print(json);
+            esp_err_t response = httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+            free(json_string);
+            cJSON_Delete(json);
+            return response;
+        }
+        buf[ret] = '\0';
+        strcat(content, buf);
+        remaining -= ret;
+        ESP_LOGI(TAG, "%d bytes total received -> %d left", strlen(content), remaining);
+    }
+
+    char funcParam[9];
+    readUrlParameterIntoBuffer(content, "func", funcParam, 9);
+    ESP_LOGI(TAG, "API Function => %s", funcParam);
+
+    httpd_resp_set_type(req, "application/json");
+    cJSON *json = cJSON_CreateObject();
+
+    bool success = true;
+    char *message = "Configuration applied successfully";
+
+    if (strcmp(funcParam, "config") == 0)
+    {
+        applyApStaConfig(content);
+        message = "WiFi configuration applied successfully";
+    }
+    else if (strcmp(funcParam, "erase") == 0)
+    {
+        eraseNvs();
+        message = "Configuration erased successfully";
+    }
+    else if (strcmp(funcParam, "advanced") == 0)
+    {
+        applyAdvancedConfig(content);
+        message = "Advanced configuration applied successfully";
+    }
+    else
+    {
+        success = false;
+        message = "Invalid function parameter";
+    }
+
+    cJSON_AddBoolToObject(json, "success", success);
+    cJSON_AddStringToObject(json, "message", message);
+
+    if (success) {
+        cJSON_AddBoolToObject(json, "restarting", true);
+        cJSON_AddNumberToObject(json, "restartDelay", 1);
+        restartByTimerinS(1);
+    }
+
+    char *json_string = cJSON_Print(json);
+    esp_err_t response = httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+    free(json_string);
+    cJSON_Delete(json);
+    return response;
+}
+
+esp_err_t api_apply_get_handler(httpd_req_t *req)
+{
+    if (isLocked())
+    {
+        return httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Locked");
+    }
+
+    httpd_resp_set_type(req, "application/json");
+    closeHeader(req);
+
+    char *redirectUrl = getRedirectUrl(req);
+    
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "redirectUrl", redirectUrl);
+    cJSON_AddStringToObject(json, "message", "Apply page data");
+
+    char *json_string = cJSON_Print(json);
+    esp_err_t ret = httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+    
+    free(json_string);
+    cJSON_Delete(json);
+    free(redirectUrl);
+    return ret;
 }
