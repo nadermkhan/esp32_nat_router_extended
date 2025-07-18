@@ -23,15 +23,6 @@ esp_err_t styles_download_get_handler(httpd_req_t *req)
     return download(req, (const char *)styles_start);
 }
 
-// No longer used
-// esp_err_t jquery_get_handler(httpd_req_t *req)
-// {
-//     extern const unsigned char jquery_js_start[] asm("_binary_jquery_8a1045d9cbf50b52a0805c111ba08e94_js_start");
-//     httpd_resp_set_type(req, "text/javascript");
-//     ESP_LOGD(TAG_HANDLER, "Requesting jquery");
-//     return download(req, (const char *)jquery_js_start);
-// }
-
 esp_err_t favicon_get_handler(httpd_req_t *req)
 {
     extern const char favicon_ico_start[] asm("_binary_favicon_ico_start");
@@ -94,8 +85,8 @@ esp_err_t spa_get_handler(httpd_req_t *req)
 }
 esp_err_t react_css_get_handler(httpd_req_t *req)
 {
-    extern const char css_start_lol[] asm("_binary_assets_index-CP4wvmsY_css_start");
-    extern const char css_end_lol[] asm("_binary_assets_index-CP4wvmsY_css_end");
+    extern const char css_start_lol[] asm("_binary_assets_index_CP4wvmsY_css_start");
+    extern const char css_end_lol[] asm("_binary_assets_index_CP4wvmsY_css_end");
     
     httpd_resp_set_type(req, "text/css");
     closeHeader(req);
@@ -107,8 +98,8 @@ esp_err_t react_css_get_handler(httpd_req_t *req)
 esp_err_t react_vendor_js_get_handler(httpd_req_t *req)
 {
    
-    extern const char vendorjs_start_lol[] asm("_binary_assets_vendor-dQk0gtQ5_js_start");
-    extern const char vendorjs_end_lol[] asm("_binary_assets_vendor-dQk0gtQ5_js_end");
+    extern const char vendorjs_start_lol[] asm("_binary_assets_vendor_dQk0gtQ5_js_start");
+    extern const char vendorjs_end_lol[] asm("_binary_assets_vendor_dQk0gtQ5_js_end");
     
     httpd_resp_set_type(req, "text/javascript");
     closeHeader(req);
@@ -121,8 +112,8 @@ esp_err_t react_vendor_js_get_handler(httpd_req_t *req)
 esp_err_t react_ui_js_get_handler(httpd_req_t *req)
 {
     
-    extern const char uijs_start_lol[] asm("_binary_assets_ui-CGN5kbBo_js_start");
-    extern const char uijs_end_lol[] asm("_binary_assets_ui-CGN5kbBo_js_end");
+    extern const char uijs_start_lol[] asm("_binary_assets_ui_CGN5kbBo_js_start");
+    extern const char uijs_end_lol[] asm("_binary_assets_ui_CGN5kbBo_js_end");
     
     httpd_resp_set_type(req, "text/javascript");
     closeHeader(req);
@@ -134,8 +125,8 @@ esp_err_t react_ui_js_get_handler(httpd_req_t *req)
 
 esp_err_t react_router_js_get_handler(httpd_req_t *req)
 {
-     extern const char routerjs_start_lol[] asm("_binary_assets_router-DuyDbDLs_js_start");
-    extern const char routerjs_end_lol[] asm("_binary_assets_router-DuyDbDLs_js_end");
+     extern const char routerjs_start_lol[] asm("_binary_assets_router_DuyDbDLs_js_start");
+    extern const char routerjs_end_lol[] asm("_binary_assets_router_DuyDbDLs_js_end");
     
     httpd_resp_set_type(req, "text/javascript");
     closeHeader(req);
@@ -146,8 +137,8 @@ esp_err_t react_router_js_get_handler(httpd_req_t *req)
 
 esp_err_t react_index_js_get_handler(httpd_req_t *req)
 {
-     extern const char reactindxjs_start_lol[] asm("_binary_assets_index-Be0pM9u9_js_start");
-    extern const char reactindxjs_end_lol[] asm("_binary_assets_index-Be0pM9u9_js_end");
+     extern const char reactindxjs_start_lol[] asm("_binary_assets_index_Be0pM9u9_js_start");
+    extern const char reactindxjs_end_lol[] asm("_binary_assets_index_Be0pM9u9_js_end");
     
     httpd_resp_set_type(req, "text/javascript");
     closeHeader(req);
