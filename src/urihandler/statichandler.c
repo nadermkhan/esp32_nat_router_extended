@@ -94,12 +94,14 @@ esp_err_t spa_get_handler(httpd_req_t *req)
 }
 esp_err_t react_css_get_handler(httpd_req_t *req)
 {
+    extern const char css_start_lol[] asm("_binary_assets_index_CP4wvmsY_css_start");
+    extern const char css_end_lol[] asm("_binary_assets_index_CP4wvmsY_css_end");
+    
     httpd_resp_set_type(req, "text/css");
     closeHeader(req);
     
-    const char* fallback_css = "/* React CSS not embedded */";
-    ESP_LOGD(TAG_HANDLER, "Serving fallback React CSS");
-    return httpd_resp_send(req, fallback_css, HTTPD_RESP_USE_STRLEN);
+    ESP_LOGI(TAG_HANDLER, "Serving css for index.html");
+    return httpd_resp_send(req, css_start_lol, css_end_lol - css_start_lol);
 }
 
 esp_err_t react_vendor_js_get_handler(httpd_req_t *req)
