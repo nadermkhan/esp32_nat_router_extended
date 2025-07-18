@@ -85,7 +85,7 @@ esp_err_t spa_get_handler(httpd_req_t *req)
 }
 esp_err_t react_css_get_handler(httpd_req_t *req)
 {
-       extern const unsigned char styles_start[] asm("_binary_index_CP4wvmsY_css_start");
+       extern const unsigned char styles_start[] asm("_binary_index_DpOF12W4_css_start");
     httpd_resp_set_type(req, "text/css");
     ESP_LOGD(TAG_HANDLER, "Requesting style");
     return download(req, (const char *)styles_start);
@@ -122,7 +122,7 @@ esp_err_t react_router_js_get_handler(httpd_req_t *req)
 
 esp_err_t react_index_js_get_handler(httpd_req_t *req)
 {
-     extern const char reactindxjs_start_lol[] asm("_binary_index_Be0pM9u9_js_start");
+     extern const char reactindxjs_start_lol[] asm("_binary_index_DUflLXBX_js_start");
      httpd_resp_set_type(req, "text/javascript");
     ESP_LOGD(TAG_HANDLER, "Requesting style");
     return download(req, (const char *)reactindxjs_start_lol);
