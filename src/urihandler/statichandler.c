@@ -83,20 +83,15 @@ esp_err_t reset_get_handler(httpd_req_t *req)
 
 esp_err_t spa_get_handler(httpd_req_t *req)
 {
+    extern const char index_html_start[] asm("_binary_index_html_start");
+    extern const char index_html_end[] asm("_binary_index_html_end");
+    
     httpd_resp_set_type(req, "text/html");
     closeHeader(req);
     
-    const char* basic_html = 
-        "<!DOCTYPE html>"
-        "<html><head><title>ESP32 Router</title></head>"
-        "<body><h1>ESP32 Router</h1>"
-        "<p>React SPA not available. Use API endpoints.</p>"
-        "</body></html>";
-    
-    ESP_LOGD(TAG_HANDLER, "Serving fallback SPA");
-    return httpd_resp_send(req, basic_html, HTTPD_RESP_USE_STRLEN);
+    ESP_LOGI(TAG_HANDLER, "Serving React SPA from embedded index.html");
+    return httpd_resp_send(req, index_html_start, index_html_end - index_html_start);
 }
-
 esp_err_t react_css_get_handler(httpd_req_t *req)
 {
     httpd_resp_set_type(req, "text/css");
