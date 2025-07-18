@@ -17,7 +17,7 @@ esp_err_t download(httpd_req_t *req, const char *fileStart)
 
 esp_err_t styles_download_get_handler(httpd_req_t *req)
 {
-    extern const unsigned char styles_start[] asm("_binary_styles_67aa3b0203355627b525be2ea57be7bf_css_start");
+    extern const unsigned char styles_start[] asm("_binary_assets_index-O1a2Fugk_css_start");
     httpd_resp_set_type(req, "text/css");
     ESP_LOGD(TAG_HANDLER, "Requesting style");
     return download(req, (const char *)styles_start);
