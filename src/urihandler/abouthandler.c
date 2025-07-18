@@ -1,6 +1,6 @@
 #include "handler.h"
 #include "cJSON.h"
-
+ 
 static const char *TAG = "AboutHandler";
 
 esp_err_t api_about_get_handler(httpd_req_t *req)
