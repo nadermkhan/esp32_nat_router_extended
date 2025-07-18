@@ -367,26 +367,29 @@ void applyAdvancedConfig(char *buf)
 
 esp_err_t apply_get_handler(httpd_req_t *req)
 {
-
     if (isLocked())
     {
         return redirectToLock(req);
     }
-        extern const char apply_start[] asm("_binary_apply_html_start");
-    extern const char apply_end[] asm("_binary_apply_html_end");
-    ESP_LOGI(TAG, "Requesting apply page");
+
+    httpd_resp_set_type(req, "application/json");
     closeHeader(req);
 
     char *redirectUrl = getRedirectUrl(req);
-    char *apply_page = malloc(apply_end - apply_start + strlen(redirectUrl) - 2);
+    
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "message", "Configuration will be applied");
+    cJSON_AddStringToObject(json, "redirectUrl", redirectUrl);
+    cJSON_AddBoolToObject(json, "success", true);
 
-    ESP_LOGI(TAG, "Redirecting after apply to '%s'", redirectUrl);
-    sprintf(apply_page, apply_start, redirectUrl);
+    char *json_string = cJSON_Print(json);
+    esp_err_t ret = httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+    
+    free(json_string);
+    cJSON_Delete(json);
     free(redirectUrl);
-
-    return httpd_resp_send(req, apply_page, HTTPD_RESP_USE_STRLEN);
+    return ret;
 }
-
 esp_err_t apply_post_handler(httpd_req_t *req)
 {
     if (isLocked())

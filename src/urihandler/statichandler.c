@@ -31,7 +31,6 @@ esp_err_t jquery_get_handler(httpd_req_t *req)
     return download(req, (const char *)jquery_js_start);
 }
 
-// Handler to download a "favicon.ico" file kept on the server
 esp_err_t favicon_get_handler(httpd_req_t *req)
 {
     extern const char favicon_ico_start[] asm("_binary_favicon_ico_start");
@@ -54,7 +53,6 @@ esp_err_t redirectToRoot(httpd_req_t *req)
     httpd_resp_set_hdr(req, "Connection", "Close");
     httpd_resp_send(req, "", HTTPD_RESP_USE_STRLEN);
     free(currentIP);
-
     return ESP_OK;
 }
 
@@ -65,7 +63,6 @@ esp_err_t http_404_error_handler(httpd_req_t *req, httpd_err_code_t err)
     return httpd_resp_send(req, NULL, 0);
 }
 
-// Updated reset handler - returns JSON instead of HTML to avoid missing binary
 esp_err_t reset_get_handler(httpd_req_t *req)
 {
     httpd_resp_set_type(req, "application/json");
@@ -83,66 +80,68 @@ esp_err_t reset_get_handler(httpd_req_t *req)
     return ret;
 }
 
-// ===== NEW SPA AND REACT HANDLERS =====
-
-// SPA Handler - serves your React app
 esp_err_t spa_get_handler(httpd_req_t *req)
 {
-    // Serve your React build's index.html
-    // Adjust the binary name to match your actual embedded file
-    extern const char index_html_start[] asm("_binary_index_html_start");
-    extern const char index_html_end[] asm("_binary_index_html_end");
-    
     httpd_resp_set_type(req, "text/html");
     closeHeader(req);
     
-    ESP_LOGD(TAG_HANDLER, "Serving React SPA");
-    return httpd_resp_send(req, index_html_start, 
-                          index_html_end - index_html_start);
+    const char* basic_html = 
+        "<!DOCTYPE html>"
+        "<html><head><title>ESP32 Router</title></head>"
+        "<body><h1>ESP32 Router</h1>"
+        "<p>React SPA not available. Use API endpoints.</p>"
+        "</body></html>";
+    
+    ESP_LOGD(TAG_HANDLER, "Serving fallback SPA");
+    return httpd_resp_send(req, basic_html, HTTPD_RESP_USE_STRLEN);
 }
 
-// React Asset Handlers
 esp_err_t react_css_get_handler(httpd_req_t *req)
 {
-    extern const char react_css_start[] asm("_binary_react_css_start");
-    
     httpd_resp_set_type(req, "text/css");
-    ESP_LOGD(TAG_HANDLER, "Serving React CSS");
-    return download(req, (const char *)react_css_start);
+    closeHeader(req);
+    
+    const char* fallback_css = "/* React CSS not embedded */";
+    ESP_LOGD(TAG_HANDLER, "Serving fallback React CSS");
+    return httpd_resp_send(req, fallback_css, HTTPD_RESP_USE_STRLEN);
 }
 
 esp_err_t react_vendor_js_get_handler(httpd_req_t *req)
 {
-    extern const char react_vendor_js_start[] asm("_binary_react_vendor_js_start");
-    
     httpd_resp_set_type(req, "application/javascript");
-    ESP_LOGD(TAG_HANDLER, "Serving React Vendor JS");
-    return download(req, (const char *)react_vendor_js_start);
+    closeHeader(req);
+    
+    const char* fallback_js = "// React Vendor JS not embedded";
+    ESP_LOGD(TAG_HANDLER, "Serving fallback React Vendor JS");
+    return httpd_resp_send(req, fallback_js, HTTPD_RESP_USE_STRLEN);
 }
 
 esp_err_t react_ui_js_get_handler(httpd_req_t *req)
 {
-    extern const char react_ui_js_start[] asm("_binary_react_ui_js_start");
-    
     httpd_resp_set_type(req, "application/javascript");
-    ESP_LOGD(TAG_HANDLER, "Serving React UI JS");
-    return download(req, (const char *)react_ui_js_start);
+    closeHeader(req);
+    
+    const char* fallback_js = "// React UI JS not embedded";
+    ESP_LOGD(TAG_HANDLER, "Serving fallback React UI JS");
+    return httpd_resp_send(req, fallback_js, HTTPD_RESP_USE_STRLEN);
 }
 
 esp_err_t react_router_js_get_handler(httpd_req_t *req)
 {
-    extern const char react_router_js_start[] asm("_binary_react_router_js_start");
-    
     httpd_resp_set_type(req, "application/javascript");
-    ESP_LOGD(TAG_HANDLER, "Serving React Router JS");
-    return download(req, (const char *)react_router_js_start);
+    closeHeader(req);
+    
+    const char* fallback_js = "// React Router JS not embedded";
+    ESP_LOGD(TAG_HANDLER, "Serving fallback React Router JS");
+    return httpd_resp_send(req, fallback_js, HTTPD_RESP_USE_STRLEN);
 }
 
 esp_err_t react_index_js_get_handler(httpd_req_t *req)
 {
-    extern const char react_index_js_start[] asm("_binary_react_index_js_start");
-    
     httpd_resp_set_type(req, "application/javascript");
-    ESP_LOGD(TAG_HANDLER, "Serving React Index JS");
-    return download(req, (const char *)react_index_js_start);
+    closeHeader(req);
+    
+    const char* fallback_js = "// React Index JS not embedded";
+    ESP_LOGD(TAG_HANDLER, "Serving fallback React Index JS");
+    return httpd_resp_send(req, fallback_js, HTTPD_RESP_USE_STRLEN);
 }
