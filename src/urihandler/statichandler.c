@@ -17,19 +17,20 @@ esp_err_t download(httpd_req_t *req, const char *fileStart)
 
 esp_err_t styles_download_get_handler(httpd_req_t *req)
 {
-    extern const unsigned char styles_start[] asm("_binary_assets_index-O1a2Fugk_css_start");
+    extern const unsigned char styles_start[] asm("_binary_assets_index_O1a2Fugk_css_start");
     httpd_resp_set_type(req, "text/css");
     ESP_LOGD(TAG_HANDLER, "Requesting style");
     return download(req, (const char *)styles_start);
 }
 
-esp_err_t jquery_get_handler(httpd_req_t *req)
-{
-    extern const unsigned char jquery_js_start[] asm("_binary_jquery_8a1045d9cbf50b52a0805c111ba08e94_js_start");
-    httpd_resp_set_type(req, "text/javascript");
-    ESP_LOGD(TAG_HANDLER, "Requesting jquery");
-    return download(req, (const char *)jquery_js_start);
-}
+// No longer used
+// esp_err_t jquery_get_handler(httpd_req_t *req)
+// {
+//     extern const unsigned char jquery_js_start[] asm("_binary_jquery_8a1045d9cbf50b52a0805c111ba08e94_js_start");
+//     httpd_resp_set_type(req, "text/javascript");
+//     ESP_LOGD(TAG_HANDLER, "Requesting jquery");
+//     return download(req, (const char *)jquery_js_start);
+// }
 
 esp_err_t favicon_get_handler(httpd_req_t *req)
 {
