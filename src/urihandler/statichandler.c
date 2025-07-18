@@ -106,32 +106,42 @@ esp_err_t react_css_get_handler(httpd_req_t *req)
 
 esp_err_t react_vendor_js_get_handler(httpd_req_t *req)
 {
-    httpd_resp_set_type(req, "application/javascript");
+   
+    extern const char vendorjs_start_lol[] asm("_binary_assets_vendor_dQk0gtQ5_js_start");
+    extern const char vendorjs_end_lol[] asm("_binary_assets_vendor_dQk0gtQ5_js_end");
+    
+    httpd_resp_set_type(req, "text/javascript");
     closeHeader(req);
     
-    const char* fallback_js = "// React Vendor JS not embedded";
-    ESP_LOGD(TAG_HANDLER, "Serving fallback React Vendor JS");
-    return httpd_resp_send(req, fallback_js, HTTPD_RESP_USE_STRLEN);
+    ESP_LOGI(TAG_HANDLER, "Serving vendorjs for index.html");
+    return httpd_resp_send(req, vendorjs_start_lol, vendorjs_end_lol - vendorjs_start_lol);
+
 }
 
 esp_err_t react_ui_js_get_handler(httpd_req_t *req)
 {
-    httpd_resp_set_type(req, "application/javascript");
+    
+    extern const char uijs_start_lol[] asm("_binary_assets_ui_CGN5kbBo_js_start");
+    extern const char uijs_end_lol[] asm("_binary_assets_ui_CGN5kbBo_js_end");
+    
+    httpd_resp_set_type(req, "text/javascript");
     closeHeader(req);
     
-    const char* fallback_js = "// React UI JS not embedded";
-    ESP_LOGD(TAG_HANDLER, "Serving fallback React UI JS");
-    return httpd_resp_send(req, fallback_js, HTTPD_RESP_USE_STRLEN);
+    ESP_LOGI(TAG_HANDLER, "Serving uijs for index.html");
+    return httpd_resp_send(req, uijs_start_lol, uijs_end_lol - uijs_start_lol);
+
 }
 
 esp_err_t react_router_js_get_handler(httpd_req_t *req)
 {
-    httpd_resp_set_type(req, "application/javascript");
+     extern const char routerjs_start_lol[] asm("_binary_assets_router_DuyDbDLs_js_start");
+    extern const char routerjs_end_lol[] asm("_binary_assets_router_DuyDbDLs_js_end");
+    
+    httpd_resp_set_type(req, "text/javascript");
     closeHeader(req);
     
-    const char* fallback_js = "// React Router JS not embedded";
-    ESP_LOGD(TAG_HANDLER, "Serving fallback React Router JS");
-    return httpd_resp_send(req, fallback_js, HTTPD_RESP_USE_STRLEN);
+    ESP_LOGI(TAG_HANDLER, "Serving routerjs for index.html");
+    return httpd_resp_send(req, routerjs_start_lol, routerjs_end_lol - routerjs_start_lol);
 }
 
 esp_err_t react_index_js_get_handler(httpd_req_t *req)
