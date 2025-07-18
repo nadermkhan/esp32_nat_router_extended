@@ -1,6 +1,7 @@
 #include "handler.h"
+#include "cJSON.h"
 
-static const char *TAG_HANDLER = "LockHandler";
+static const char *TAG_HANDLER = "StaticHandler";
 
 void closeHeader(httpd_req_t *req)
 {
@@ -46,7 +47,7 @@ esp_err_t redirectToRoot(httpd_req_t *req)
 {
     httpd_resp_set_status(req, "302 Temporary Redirect");
     char *currentIP = getDefaultIPByNetmask();
-    char str[strlen("http://") + strlen(currentIP)];
+    char str[strlen("http://") + strlen(currentIP) + 1];
     strcpy(str, "http://");
     strcat(str, currentIP);
     httpd_resp_set_hdr(req, "Location", str);
@@ -59,19 +60,89 @@ esp_err_t redirectToRoot(httpd_req_t *req)
 
 esp_err_t http_404_error_handler(httpd_req_t *req, httpd_err_code_t err)
 {
-
     httpd_resp_set_status(req, "302 Temporary Redirect");
     httpd_resp_set_hdr(req, "Location", "/");
     return httpd_resp_send(req, NULL, 0);
 }
 
+// Updated reset handler - returns JSON instead of HTML to avoid missing binary
 esp_err_t reset_get_handler(httpd_req_t *req)
 {
-    httpd_req_to_sockfd(req);
-    extern const char reset_start[] asm("_binary_reset_html_start");
-
+    httpd_resp_set_type(req, "application/json");
     closeHeader(req);
 
-    esp_err_t ret = httpd_resp_send(req, reset_start, HTTPD_RESP_USE_STRLEN);
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "message", "Device reset initiated");
+    cJSON_AddBoolToObject(json, "success", true);
+
+    char *json_string = cJSON_Print(json);
+    esp_err_t ret = httpd_resp_send(req, json_string, HTTPD_RESP_USE_STRLEN);
+    
+    free(json_string);
+    cJSON_Delete(json);
     return ret;
+}
+
+// ===== NEW SPA AND REACT HANDLERS =====
+
+// SPA Handler - serves your React app
+esp_err_t spa_get_handler(httpd_req_t *req)
+{
+    // Serve your React build's index.html
+    // Adjust the binary name to match your actual embedded file
+    extern const char index_html_start[] asm("_binary_index_html_start");
+    extern const char index_html_end[] asm("_binary_index_html_end");
+    
+    httpd_resp_set_type(req, "text/html");
+    closeHeader(req);
+    
+    ESP_LOGD(TAG_HANDLER, "Serving React SPA");
+    return httpd_resp_send(req, index_html_start, 
+                          index_html_end - index_html_start);
+}
+
+// React Asset Handlers
+esp_err_t react_css_get_handler(httpd_req_t *req)
+{
+    extern const char react_css_start[] asm("_binary_react_css_start");
+    
+    httpd_resp_set_type(req, "text/css");
+    ESP_LOGD(TAG_HANDLER, "Serving React CSS");
+    return download(req, (const char *)react_css_start);
+}
+
+esp_err_t react_vendor_js_get_handler(httpd_req_t *req)
+{
+    extern const char react_vendor_js_start[] asm("_binary_react_vendor_js_start");
+    
+    httpd_resp_set_type(req, "application/javascript");
+    ESP_LOGD(TAG_HANDLER, "Serving React Vendor JS");
+    return download(req, (const char *)react_vendor_js_start);
+}
+
+esp_err_t react_ui_js_get_handler(httpd_req_t *req)
+{
+    extern const char react_ui_js_start[] asm("_binary_react_ui_js_start");
+    
+    httpd_resp_set_type(req, "application/javascript");
+    ESP_LOGD(TAG_HANDLER, "Serving React UI JS");
+    return download(req, (const char *)react_ui_js_start);
+}
+
+esp_err_t react_router_js_get_handler(httpd_req_t *req)
+{
+    extern const char react_router_js_start[] asm("_binary_react_router_js_start");
+    
+    httpd_resp_set_type(req, "application/javascript");
+    ESP_LOGD(TAG_HANDLER, "Serving React Router JS");
+    return download(req, (const char *)react_router_js_start);
+}
+
+esp_err_t react_index_js_get_handler(httpd_req_t *req)
+{
+    extern const char react_index_js_start[] asm("_binary_react_index_js_start");
+    
+    httpd_resp_set_type(req, "application/javascript");
+    ESP_LOGD(TAG_HANDLER, "Serving React Index JS");
+    return download(req, (const char *)react_index_js_start);
 }

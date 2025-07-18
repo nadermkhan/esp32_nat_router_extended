@@ -98,3 +98,5 @@ esp_err_t api_scan_result_get_handler(httpd_req_t *req);
 /* API Apply Handler */
 esp_err_t api_apply_get_handler(httpd_req_t *req);
 esp_err_t api_apply_post_handler(httpd_req_t *req);
+
+
