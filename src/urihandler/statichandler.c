@@ -106,7 +106,7 @@ esp_err_t react_vendor_js_get_handler(httpd_req_t *req)
 esp_err_t react_ui_js_get_handler(httpd_req_t *req)
 {
     
-    extern const unsigned char uijs_start_lol[] asm("_binary_ui_start");
+    extern const unsigned char uijs_start_lol[] asm("_binary_ui_js_start");
      httpd_resp_set_type(req, "text/javascript");
     ESP_LOGD(TAG_HANDLER, "Requesting style");
     return download(req, (const char *)uijs_start_lol);
