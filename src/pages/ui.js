@@ -1,4 +1,4 @@
-import{r as e}from"./router-DuyDbDLs.js";
+import{r as e}from"./router.js";
 /**
  * @license lucide-react v0.525.0 - ISC
  *

@@ -150,31 +150,31 @@ static httpd_uri_t api_scan_start_post = {
 
 // Static assets for React
 static httpd_uri_t react_index_js = {
-    .uri = "/assets/index-Be0pM9u9.js", 
+    .uri = "/index.js", 
     .method = HTTP_GET, 
     .handler = react_index_js_get_handler
 };
 
 static httpd_uri_t react_router_js = {
-    .uri = "/assets/router-DuyDbDLs.js", 
+    .uri = "/router.js", 
     .method = HTTP_GET, 
     .handler = react_router_js_get_handler
 };
 
 static httpd_uri_t react_ui_js = {
-    .uri = "/assets/ui-CGN5kbBo.js", 
+    .uri = "/ui.js", 
     .method = HTTP_GET, 
     .handler = react_ui_js_get_handler
 };
 
 static httpd_uri_t react_vendor_js = {
-    .uri = "/assets/vendor-dQk0gtQ5.js", 
+    .uri = "/vendor.js", 
     .method = HTTP_GET, 
     .handler = react_vendor_js_get_handler
 };
 
 static httpd_uri_t react_css = {
-    .uri = "/assets/index-CP4wvmsY.css", 
+    .uri = "/index.css", 
     .method = HTTP_GET, 
     .handler = react_css_get_handler
 };

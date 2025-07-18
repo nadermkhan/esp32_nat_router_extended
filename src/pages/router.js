@@ -1,4 +1,4 @@
-import{r as e,g as t,a as n}from"./vendor-dQk0gtQ5.js";function r(e,t){for(var n=0;n<t.length;n++){const r=t[n];if("string"!=typeof r&&!Array.isArray(r))for(const t in r)if("default"!==t&&!(t in e)){const n=Object.getOwnPropertyDescriptor(r,t);n&&Object.defineProperty(e,t,n.get?n:{enumerable:!0,get:()=>r[t]})}}return Object.freeze(Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}))}var a=e();const o=t(a),i=r({__proto__:null,default:o},[a]);
+import{r as e,g as t,a as n}from"./vendor.js";function r(e,t){for(var n=0;n<t.length;n++){const r=t[n];if("string"!=typeof r&&!Array.isArray(r))for(const t in r)if("default"!==t&&!(t in e)){const n=Object.getOwnPropertyDescriptor(r,t);n&&Object.defineProperty(e,t,n.get?n:{enumerable:!0,get:()=>r[t]})}}return Object.freeze(Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}))}var a=e();const o=t(a),i=r({__proto__:null,default:o},[a]);
 /**
  * react-router v7.7.0
  *
