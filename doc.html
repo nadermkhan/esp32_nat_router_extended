@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Router API Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .endpoint {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .endpoint-header {
+            background: #f8f9fa;
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        .method {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .get { background: #28a745; color: white; }
+        .post { background: #007bff; color: white; }
+        .endpoint-body {
+            padding: 15px;
+        }
+        .code {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .auth-required {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .response-example {
+            background: #e8f5e8;
+            border-left: 4px solid #28a745;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .request-example {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ESP32 Router API Documentation</h1>
+        <p>Complete API reference for ESP32 NAT Router with React SPA</p>
+    </div>
+
+    <div class="section">
+        <h2>Authentication</h2>
+        <p>Some endpoints require authentication. When the device is locked, endpoints marked with <span class="auth-required">🔒 Auth Required</span> will return <code>401 Unauthorized</code> if accessed without proper authentication.</p>
+    </div>
+
+    <div class="section">
+        <h2>Configuration Management</h2>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <strong>/api/config</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Get current WiFi and device configuration</p>
+                <div class="response-example">
+                    <strong>Response Example:</strong>
+                    <div class="code">{
+  "apSSID": "ESP32_Router",
+  "apPassword": "password123",
+  "ssidHidden": false,
+  "staSSID": "MyWiFi",
+  "staPassword": "",
+  "wifiStrength": "-45",
+  "wifiStatus": "success",
+  "wifiConnected": true,
+  "connectCount": 3,
+  "wpa2Enabled": false,
+  "wpa2Identity": "",
+  "wpa2User": "",
+  "wpa2Certificate": "",
+  "hasLockPassword": true,
+  "scanResultAvailable": false
+}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <strong>/api/config</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Update WiFi configuration (used for SSID selection)</p>
+                <div class="request-example">
+                    <strong>Request Body (form-encoded):</strong>
+                    <div class="code">ssid=MyWiFiNetwork</div>
+                </div>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{"success": true}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>WiFi Connection Management</h2>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <strong>/api/apply</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Get apply page information</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "redirectUrl": "http://192.168.4.1",
+  "message": "Apply page data"
+}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <strong>/api/apply</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Apply WiFi configuration and restart device</p>
+                <div class="request-example">
+                    <strong>WiFi Configuration:</strong>
+                    <div class="code">func=config&ssid=NAKIB&password=69697833&ap_ssid=MyESP32&ap_password=mypassword</div>
+                </div>
+                <div class="request-example">
+                    <strong>Advanced Configuration:</strong>
+                    <div class="code">func=advanced&keepalive=on&ledenabled=on&natenabled=on&hostname=MyRouter</div>
+                </div>
+                <div class="request-example">
+                    <strong>Erase Configuration:</strong>
+                    <div class="code">func=erase</div>
+                </div>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "success": true,
+  "message": "Configuration applied successfully",
+  "restarting": true,
+  "restartDelay": 1
+}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>WiFi Scanning</h2>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <strong>/api/scan/start</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Start WiFi network scan</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "success": true,
+  "message": "WiFi scan started",
+  "redirectUrl": "http://192.168.4.1"
+}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <strong>/api/scan/result</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Get WiFi scan results</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "networks": [
+    {
+      "ssid": "MyWiFi",
+      "rssi": -45,
+      "strength": "success"
+    },
+    {
+      "ssid": "NeighborWiFi", 
+      "rssi": -67,
+      "strength": "info"
+    }
+  ],
+  "hasResults": true
+}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Connected Clients</h2>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <strong>/api/clients</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Get list of connected clients</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "clients": [
+    {
+      "id": 1,
+      "ip": "192.168.4.2",
+      "mac": "aa:bb:cc:dd:ee:ff"
+    }
+  ],
+  "count": 1
+}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Port Mapping</h2>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <strong>/api/portmap</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Get current port mappings</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "entries": [
+    {
+      "protocol": "TCP",
+      "externalPort": 8080,
+      "internalIP": "192.168.4.2",
+      "internalPort": 80,
+      "id": "TCP_8080_192.168.4.2_80"
+    }
+  ],
+  "ipPrefix": "192.168.4."
+}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <strong>/api/portmap</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Add or delete port mappings</p>
+                <div class="request-example">
+                    <strong>Add Port Mapping:</strong>
+                    <div class="code">func=add&protocol=tcp&eport=8080&ip=2&iport=80</div>
+                </div>
+                <div class="request-example">
+                    <strong>Delete Port Mapping:</strong>
+                    <div class="code">func=del&entry=TCP_8080_192.168.4.2_80</div>
+                </div>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "success": true,
+  "message": "Port mapping added successfully"
+}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Advanced Settings</h2>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <strong>/api/advanced</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Get advanced configuration settings</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "keepAlive": false,
+  "ledEnabled": true,
+  "natEnabled": true,
+  "hostname": "ESP32-Router",
+  "octet": 4,
+  "txPower": "high",
+  "lowerBandwidth": false,
+  "currentDNS": "8.8.8.8",
+  "dnsType": "default",
+  "customDNSIP": "",
+  "currentMAC": "aa:bb:cc:dd:ee:ff",
+  "defaultMAC": "aa:bb:cc:dd:ee:ff",
+  "macType": "default",
+  "netmask": "255.255.255.0",
+  "netmaskType": "classc"
+}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Device Lock/Unlock</h2>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <strong>/api/lock</strong>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Get lock status</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "locked": false,
+  "hasPassword": true
+}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <strong>/api/lock</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Set or update lock password</p>
+                <div class="request-example">
+                    <strong>Request:</strong>
+                    <div class="code">lockpass=newpassword&lockpass2=newpassword</div>
+                </div>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "success": true,
+  "message": "Password updated successfully",
+  "locked": true
+}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <strong>/api/unlock</strong>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Unlock the device</p>
+                <div class="request-example">
+                    <strong>Request:</strong>
+                    <div class="code">unlock=yourpassword</div>
+                </div>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "success": true,
+  "message": "Unlocked successfully"
+}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>OTA Updates</h2>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <strong>/api/ota</strong>
+                                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Get OTA update information</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "currentVersion": "1.2.3",
+  "latestVersion": "1.2.4",
+  "changelog": "Bug fixes and improvements",
+  "otaUrl": "https://example.com/firmware.bin",
+  "buildLabel": "Default build",
+  "chipType": "ESP32",
+  "otaRunning": false
+}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <strong>/api/ota/check</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Check for available updates</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "success": true,
+  "latestVersion": "1.2.4",
+  "changelog": "Bug fixes and improvements"
+}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <strong>/api/ota/start</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Start OTA update process</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "success": true,
+  "message": "OTA update started"
+}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <strong>/api/ota/status</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Get OTA update progress</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "otaRunning": true,
+  "finished": false,
+  "progress": 45,
+  "progressLabel": "450 of 1000 kB",
+  "log": "Download started\nProgress: 45%",
+  "result": ""
+}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Device Information</h2>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <strong>/api/about</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Get device information and version</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "version": "1.2.3",
+  "hash": "abc123def456",
+  "buildDate": "2025-01-15 10:30:00"
+}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Legacy REST API</h2>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method get">GET</span>
+                <strong>/rest</strong>
+                <span class="auth-required">🔒 Auth Required</span>
+            </div>
+            <div class="endpoint-body">
+                <p><strong>Description:</strong> Legacy REST endpoint for basic status</p>
+                <div class="response-example">
+                    <strong>Response:</strong>
+                    <div class="code">{
+  "clients": 3,
+  "strength": "-45",
+  "text": "success"
+}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Static Assets</h2>
+        <p>The following static assets are served for the React SPA:</p>
+        <ul>
+            <li><code>GET /</code> - React SPA main page</li>
+            <li><code>GET /assets/index-iP8dXgYc.js</code> - React main JavaScript</li>
+            <li><code>GET /assets/router-DuyDbDLs.js</code> - React Router JavaScript</li>
+            <li><code>GET /assets/ui-CGN5kbBo.js</code> - React UI components</li>
+            <li><code>GET /assets/vendor-dQk0gtQ5.js</code> - React vendor libraries</li>
+            <li><code>GET /assets/index-O1a2Fugk.css</code> - React CSS styles</li>
+            <li><code>GET /favicon.ico</code> - Site favicon</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Error Responses</h2>
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <strong>401 Unauthorized</strong>
+            </div>
+            <div class="endpoint-body">
+                <p>Returned when accessing protected endpoints while device is locked</p>
+                <div class="code">HTTP/1.1 401 Unauthorized
+Content-Type: text/plain
+
+Locked</div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <strong>404 Not Found</strong>
+            </div>
+            <div class="endpoint-body">
+                <p>Automatically redirects to root path for SPA routing</p>
+                <div class="code">HTTP/1.1 302 Temporary Redirect
+Location: /</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Usage Examples</h2>
+        
+        <h3>Connect to WiFi Network</h3>
+        <div class="code">curl -X POST http://192.168.4.1/api/apply \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "func=config&ssid=MyWiFi&password=mypassword"</div>
+
+        <h3>Get Connected Clients</h3>
+        <div class="code">curl http://192.168.4.1/api/clients</div>
+
+        <h3>Add Port Mapping</h3>
+        <div class="code">curl -X POST http://192.168.4.1/api/portmap \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "func=add&protocol=tcp&eport=8080&ip=2&iport=80"</div>
+
+        <h3>Start WiFi Scan</h3>
+        <div class="code">curl -X POST http://192.168.4.1/api/scan/start</div>
+
+        <h3>Unlock Device</h3>
+        <div class="code">curl -X POST http://192.168.4.1/api/unlock \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "unlock=yourpassword"</div>
+    </div>
+
+    <div class="section">
+        <h2>Notes</h2>
+        <ul>
+            <li>All POST requests expect <code>application/x-www-form-urlencoded</code> content type</li>
+            <li>Device automatically restarts after applying configuration changes</li>
+            <li>WiFi scan results are cached and expire after being shown 3 times</li>
+            <li>OTA updates will restart the device upon completion</li>
+            <li>Port mapping uses the device's internal IP range (typically 192.168.4.x)</li>
+            <li>Advanced settings like DNS, MAC address, and network settings require device restart</li>
+            <li>The React SPA handles client-side routing for all main application routes</li>
+        </ul>
+    </div>
+
+    <footer style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666;">
+        <p>ESP32 NAT Router API Documentation - Generated from source code analysis</p>
+    </footer>
+</body>
+</html>

@@ -150,7 +150,7 @@ static httpd_uri_t api_scan_start_post = {
 
 // Static assets for React
 static httpd_uri_t react_index_js = {
-    .uri = "/assets/index-iP8dXgYc.js", 
+    .uri = "/assets/index-Be0pM9u9.js", 
     .method = HTTP_GET, 
     .handler = react_index_js_get_handler
 };
@@ -174,7 +174,7 @@ static httpd_uri_t react_vendor_js = {
 };
 
 static httpd_uri_t react_css = {
-    .uri = "/assets/index-O1a2Fugk.css", 
+    .uri = "/assets/index-CP4wvmsY.css", 
     .method = HTTP_GET, 
     .handler = react_css_get_handler
 };
