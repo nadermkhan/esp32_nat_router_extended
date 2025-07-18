@@ -449,7 +449,7 @@ esp_err_t apply_post_handler(httpd_req_t *req)
 }
 
 // New API endpoints for React SPA
-esp_err_t (httpd_req_t *req)
+esp_err_t api_apply_post_handler(httpd_req_t *req)
 {
     if (isLocked())
     {
