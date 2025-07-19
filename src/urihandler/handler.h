@@ -1,102 +1,67 @@
-#include <esp_log.h>
+#ifndef HANDLER_H
+#define HANDLER_H
+
 #include <esp_http_server.h>
+#include <esp_log.h>
+#include <esp_system.h>
+#include <esp_heap_caps.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include "router_globals.h"
-#include "lwip/ip4_addr.h"
 #include "helper.h"
-#include "cmd_system.h"
+#include "cJSON.h"
 
-/* Static Handlers */
-void closeHeader(httpd_req_t *req);
-esp_err_t styles_download_get_handler(httpd_req_t *req);
-// esp_err_t jquery_get_handler(httpd_req_t *req); no longer used
-esp_err_t favicon_get_handler(httpd_req_t *req);
-esp_err_t http_404_error_handler(httpd_req_t *req, httpd_err_code_t err);
-esp_err_t redirectToRoot(httpd_req_t *req);
-esp_err_t reset_get_handler(httpd_req_t *req);
+// Security constants
+#define MAX_REQUEST_SIZE 4096
+#define MAX_PARAM_LENGTH 256
+#define API_RATE_LIMIT_WINDOW 60000  // 1 minute in ms
+#define API_RATE_LIMIT_MAX_REQUESTS 100
 
-/* SPA Handlers */
-esp_err_t spa_get_handler(httpd_req_t *req);
+// API Response helpers
+typedef struct {
+    bool success;
+    char *message;
+    cJSON *data;
+    int status_code;
+} api_response_t;
 
-/* React Asset Handlers */
-esp_err_t react_index_js_get_handler(httpd_req_t *req);
-esp_err_t react_router_js_get_handler(httpd_req_t *req);
-esp_err_t react_ui_js_get_handler(httpd_req_t *req);
-esp_err_t react_vendor_js_get_handler(httpd_req_t *req);
-esp_err_t react_css_get_handler(httpd_req_t *req);
+// Rate limiting structure
+typedef struct {
+    uint32_t request_count;
+    int64_t window_start;
+    char client_ip[16];
+} rate_limit_entry_t;
 
-/* Legacy IndexHandler (for backward compatibility) */
-esp_err_t index_get_handler(httpd_req_t *req);
-esp_err_t index_post_handler(httpd_req_t *req);
+// Function declarations
+esp_err_t send_api_response(httpd_req_t *req, api_response_t *response);
+bool check_rate_limit(httpd_req_t *req);
+bool validate_request_size(httpd_req_t *req);
+void sanitize_string_input(char *input, size_t max_len);
+bool is_valid_ip_address(const char *ip);
+bool is_valid_port(int port);
 
-/* Lockhandler */
-bool isLocked();
-void lockUI();
-esp_err_t unlock_handler(httpd_req_t *req);
-esp_err_t lock_handler(httpd_req_t *req);
-esp_err_t redirectToLock(httpd_req_t *req);
-
-/* ScanHandler */
-void fillInfoData(char **db, char **textColor);
-esp_err_t scan_download_get_handler(httpd_req_t *req);
-
-/* ResultHandler */
-esp_err_t result_download_get_handler(httpd_req_t *req);
-char *findTextColorForSSID(int8_t rssi);
-
-/* ApplyHandler */
-esp_err_t apply_get_handler(httpd_req_t *req);
-esp_err_t apply_post_handler(httpd_req_t *req);
-
-/* RestHandler */
-esp_err_t rest_handler(httpd_req_t *req);
-
-/* Legacy handlers (for backward compatibility) */
-esp_err_t advanced_download_get_handler(httpd_req_t *req);
-esp_err_t clients_download_get_handler(httpd_req_t *req);
-esp_err_t ota_download_get_handler(httpd_req_t *req);
-esp_err_t otalog_get_handler(httpd_req_t *req);
-esp_err_t ota_post_handler(httpd_req_t *req);
-esp_err_t otalog_post_handler(httpd_req_t *req);
-esp_err_t about_get_handler(httpd_req_t *req);
-esp_err_t portmap_get_handler(httpd_req_t *req);
-esp_err_t portmap_post_handler(httpd_req_t *req);
-
-/* ===== NEW API HANDLERS ===== */
-
-/* API About Handler */
+// API Handlers
 esp_err_t api_about_get_handler(httpd_req_t *req);
-
-/* API Advanced Handler */
-esp_err_t api_advanced_get_handler(httpd_req_t *req);
-
-/* API Clients Handler */
-esp_err_t api_clients_get_handler(httpd_req_t *req);
-
-/* API Config Handler (Index) */
 esp_err_t api_config_get_handler(httpd_req_t *req);
 esp_err_t api_config_post_handler(httpd_req_t *req);
-
-/* API Lock Handler */
+esp_err_t api_advanced_get_handler(httpd_req_t *req);
+esp_err_t api_advanced_post_handler(httpd_req_t *req);
+esp_err_t api_clients_get_handler(httpd_req_t *req);
+esp_err_t api_clients_block_post_handler(httpd_req_t *req);
+esp_err_t api_clients_unblock_post_handler(httpd_req_t *req);
+esp_err_t api_portmap_get_handler(httpd_req_t *req);
+esp_err_t api_portmap_post_handler(httpd_req_t *req);
+esp_err_t api_scan_start_post_handler(httpd_req_t *req);
+esp_err_t api_scan_result_get_handler(httpd_req_t *req);
+esp_err_t api_system_get_handler(httpd_req_t *req);
+esp_err_t api_system_restart_post_handler(httpd_req_t *req);
+esp_err_t api_apply_post_handler(httpd_req_t *req);
 esp_err_t api_lock_get_handler(httpd_req_t *req);
 esp_err_t api_lock_post_handler(httpd_req_t *req);
 esp_err_t api_unlock_post_handler(httpd_req_t *req);
 
-/* API OTA Handler */
-esp_err_t api_ota_get_handler(httpd_req_t *req);
-esp_err_t api_ota_check_post_handler(httpd_req_t *req);
-esp_err_t api_ota_start_post_handler(httpd_req_t *req);
-esp_err_t api_ota_status_get_handler(httpd_req_t *req);
+// Lock functions
+bool isLocked(void);
+void lockUI(void);
 
-/* API Portmap Handler */
-esp_err_t api_portmap_get_handler(httpd_req_t *req);
-esp_err_t api_portmap_post_handler(httpd_req_t *req);
-
-/* API Scan Handler */
-esp_err_t api_scan_start_post_handler(httpd_req_t *req);
-esp_err_t api_scan_result_get_handler(httpd_req_t *req);
-
-/* API Apply Handler */
-esp_err_t api_apply_get_handler(httpd_req_t *req);
-esp_err_t api_apply_post_handler(httpd_req_t *req);
-
-
+#endif
