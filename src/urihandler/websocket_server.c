@@ -9,9 +9,6 @@ static httpd_handle_t websocket_server = NULL;
 static websocket_client_t clients[10];
 static int client_count = 0;
 
-// External function declaration
-extern bool isLocked(void);
-
 esp_err_t websocket_send_json(int fd, cJSON *json)
 {
     char *json_string = cJSON_Print(json);

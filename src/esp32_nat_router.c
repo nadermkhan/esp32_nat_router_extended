@@ -20,6 +20,7 @@
 #include "nvs_flash.h"
 #include "esp_eap_client.h"
 #include "esp_event.h"
+#include "urihandler/websocket_server.h"
 
 #include "freertos/event_groups.h"
 #include "esp_wifi.h"
@@ -872,7 +873,7 @@ void app_main(void)
     get_config_param_int("lock", &lock);
     if (lock == 0)
     {
-        ESP_LOGI(TAG, "Starting config web server");
+        ESP_LOGI(TAG, "Starting config websocket server");
         start_websocket_server();
     }
     else
