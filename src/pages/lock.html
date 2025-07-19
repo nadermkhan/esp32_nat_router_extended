@@ -1,42 +1,757 @@
 <!DOCTYPE html>
-<html lang=en>
+<html lang="en">
 
 <head>
-    <link rel="shortcut icon" type=image/x-icon href=favicon.ico>
-    <meta charset=utf-8>
-    <meta http-equiv=X-UA-Compatible content="IE=edge">
-    <meta name=viewport content="width=device-width, initial-scale=1">
-    <link rel=stylesheet href=styles-67aa3b0203355627b525be2ea57be7bf.css>
-    <title>Lock UI</title>
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Security Lock - ESP32 NAT Router</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .security-info {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .security-info .icon {
+            font-size: 3rem;
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .security-info h2 {
+            color: #856404;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .security-info p {
+            color: #856404;
+            line-height: 1.5;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border-left: 5px solid #4facfe;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-control {
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .password-strength {
+            margin-top: 10px;
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .strength-weak { background: #dc3545; width: 25%; }
+        .strength-fair { background: #ffc107; width: 50%; }
+        .strength-good { background: #28a745; width: 75%; }
+        .strength-strong { background: #007bff; width: 100%; }
+
+        .strength-text {
+            font-size: 0.875rem;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .match-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .match-indicator.match {
+            color: #28a745;
+        }
+
+        .match-indicator.no-match {
+            color: #dc3545;
+        }
+
+        .form-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3);
+        }
+
+        .btn-light {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-light:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .danger-zone {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border: 2px solid #dc3545;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .danger-zone .icon {
+            font-size: 2.5rem;
+            color: #721c24;
+            margin-bottom: 15px;
+        }
+
+        .danger-zone h3 {
+            color: #721c24;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .danger-zone p {
+            color: #721c24;
+            margin-bottom: 20px;
+        }
+
+        .security-tips {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .security-tips h3 {
+            color: #1976d2;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .security-tips ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .security-tips li {
+            color: #1976d2;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .btn {
+                padding: 12px 25px;
+            }
+        }
+
+        /* Animation for form validation */
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
 </head>
 
 <body>
-    <div class=container>
-        <div class="row text-center">
-            <h1>Lock UI</h1>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-shield-alt"></i>
+                Security Lock
+            </h1>
+            <div class="subtitle">Protect your router configuration</div>
         </div>
-        <h2 class="mt-2 text-center">To lock interface insert a password twice.</h2>
-        <form action=/lock method=POST>
-            <div class="form-group row"> <label for=lockpass class=col-3>Password</label>
-                <div class=col-9> <input type=password class=form-control name=lockpass id=lockpass value maxlength=64
-                        placeholder="Lock password"> </div>
+        
+        <div class="content">
+            <div class="security-info">
+                <div class="icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h2>Interface Security</h2>
+                <p>Set a password to prevent unauthorized access to your router's configuration interface. This adds an extra layer of security to your device.</p>
             </div>
-            <div class="form-group row mt-2"> <label for=lockpass2 class=col-3>Repeat</label>
-                <div class=col-9> <input type=password class=form-control name=lockpass2 id=lockpass2 value maxlength=64
-                        placeholder=Repeat> </div>
+
+            <div class="security-tips">
+                <h3>
+                    <i class="fas fa-lightbulb"></i>
+                    Security Tips
+                </h3>
+                <ul>
+                    <li><i class="fas fa-check"></i> Use a strong password with at least 8 characters</li>
+                    <li><i class="fas fa-check"></i> Include uppercase, lowercase, numbers, and symbols</li>
+                    <li><i class="fas fa-check"></i> Avoid common words or personal information</li>
+                    <li><i class="fas fa-check"></i> Remember your password - recovery options are limited</li>
+                </ul>
             </div>
-            <div class="form-group row col-9 offset-3"> <small class="form-text text-muted">Both fields empty will
-                    remove the password</small> </div>
-            <div class="form-group row col-4 offset-4 mt-4"> <input type=hidden name=x value=y> <input type=submit
-                    value=Save class="btn btn-primary"> </div>
-        </form>
-        <form action=/lock method=POST style="display: %s;">
-            <div class="form-group row col-4 offset-4 mt-2"> <input type=hidden name=lockpass value> <input type=hidden
-                    name=lockpass2 value> <input type=hidden name=x value=y> <input type=submit value="Remove password"
-                    class="btn btn-warning"> </div>
-        </form>
-        <div class="form-group row col-4 offset-4 mt-5"> <a href=/ class="btn btn-light">Back</a> </div>
+
+            <form action="/lock" method="POST" id="lockForm">
+                <div class="form-section">
+                    <div class="form-row">
+                        <label for="lockpass">
+                            <i class="fas fa-key"></i>
+                            Password
+                        </label>
+                        <div>
+                            <input type="password" class="form-control" name="lockpass" id="lockpass" 
+                                   maxlength="64" placeholder="Enter a secure password">
+                            <div class="password-strength">
+                                <div class="strength-bar" id="strengthBar"></div>
+                            </div>
+                            <div class="strength-text" id="strengthText"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="lockpass2">
+                            <i class="fas fa-redo"></i>
+                            Confirm
+                        </label>
+                        <div>
+                            <input type="password" class="form-control" name="lockpass2" id="lockpass2" 
+                                   maxlength="64" placeholder="Repeat the password">
+                            <div class="match-indicator" id="matchIndicator" style="display: none;">
+                                <i class="fas fa-check"></i>
+                                <span>Passwords match</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-text">
+                        <i class="fas fa-info-circle"></i>
+                        Leave both fields empty to remove the current password protection
+                    </div>
+                </div>
+
+                <input type="hidden" name="x" value="y">
+                
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary" id="saveBtn">
+                        <i class="fas fa-save"></i>
+                        Set Password Protection
+                    </button>
+                </div>
+            </form>
+
+            <div class="danger-zone" style="display: %s;">
+                <div class="icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3>Remove Password Protection</h3>
+                <p>This will completely remove password protection from your router interface.</p>
+                
+                <form action="/lock" method="POST">
+                    <input type="hidden" name="lockpass" value="">
+                    <input type="hidden" name="lockpass2" value="">
+                    <input type="hidden" name="x" value="y">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-unlock"></i>
+                        Remove Password Protection
+                    </button>
+                </form>
+            </div>
+
+            <div class="button-group">
+                <a href="/" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Configuration
+                </a>
+            </div>
+        </div>
     </div>
+
+    <script>
+        const passwordInput = document.getElementById('lockpass');
+        const confirmInput = document.getElementById('lockpass2');
+        const strengthBar = document.getElementById('strengthBar');
+        const strengthText = document.getElementById('strengthText');
+        const matchIndicator = document.getElementById('matchIndicator');
+        const saveBtn = document.getElementById('saveBtn');
+        const form = document.getElementById('lockForm');
+
+        // Password strength checker
+        function checkPasswordStrength(password) {
+            if (password.length === 0) return { score: 0, text: '', class: '' };
+            
+            let score = 0;
+            let feedback = [];
+
+            // Length check
+            if (password.length >= 8) score += 25;
+            else feedback.push('at least 8 characters');
+
+            // Uppercase check
+            if (/[A-Z]/.test(password)) score += 25;
+            else feedback.push('uppercase letters');
+
+            // Lowercase check
+            if (/[a-z]/.test(password)) score += 25;
+            else feedback.push('lowercase letters');
+
+            // Number or symbol check
+            if (/[\d\W]/.test(password)) score += 25;
+            else feedback.push('numbers or symbols');
+
+            let strength = '';
+            let className = '';
+            
+            if (score < 25) {
+                strength = 'Very Weak';
+                className = 'strength-weak';
+            } else if (score < 50) {
+                strength = 'Weak';
+                className = 'strength-weak';
+            } else if (score < 75) {
+                strength = 'Fair';
+                className = 'strength-fair';
+                       } else if (score < 100) {
+                strength = 'Good';
+                className = 'strength-good';
+            } else {
+                strength = 'Strong';
+                className = 'strength-strong';
+            }
+
+            return { score, text: strength, class: className, feedback };
+        }
+
+        // Check if passwords match
+        function checkPasswordMatch() {
+            const password = passwordInput.value;
+            const confirm = confirmInput.value;
+            
+            if (confirm.length === 0) {
+                matchIndicator.style.display = 'none';
+                return false;
+            }
+            
+            matchIndicator.style.display = 'flex';
+            
+            if (password === confirm) {
+                matchIndicator.className = 'match-indicator match';
+                matchIndicator.innerHTML = '<i class="fas fa-check"></i><span>Passwords match</span>';
+                return true;
+            } else {
+                matchIndicator.className = 'match-indicator no-match';
+                matchIndicator.innerHTML = '<i class="fas fa-times"></i><span>Passwords do not match</span>';
+                return false;
+            }
+        }
+
+        // Update password strength display
+        function updatePasswordStrength() {
+            const password = passwordInput.value;
+            const strength = checkPasswordStrength(password);
+            
+            if (password.length === 0) {
+                strengthBar.className = 'strength-bar';
+                strengthBar.style.width = '0%';
+                strengthText.textContent = '';
+                return;
+            }
+            
+            strengthBar.className = `strength-bar ${strength.class}`;
+            strengthText.textContent = `Strength: ${strength.text}`;
+            strengthText.className = `strength-text ${strength.class}`;
+        }
+
+        // Validate form
+        function validateForm() {
+            const password = passwordInput.value;
+            const confirm = confirmInput.value;
+            
+            // If both fields are empty, allow submission (removes password)
+            if (password === '' && confirm === '') {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-unlock"></i> Remove Password Protection';
+                return true;
+            }
+            
+            // If password is provided, validate it
+            if (password.length > 0) {
+                const strength = checkPasswordStrength(password);
+                const passwordsMatch = checkPasswordMatch();
+                
+                if (password.length < 8) {
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Password too short';
+                    return false;
+                }
+                
+                if (!passwordsMatch) {
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Passwords must match';
+                    return false;
+                }
+                
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Set Password Protection';
+                return true;
+            }
+            
+            // If only one field has content
+            if (password !== confirm) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Complete both fields';
+                return false;
+            }
+            
+            return false;
+        }
+
+        // Event listeners
+        passwordInput.addEventListener('input', function() {
+            updatePasswordStrength();
+            validateForm();
+        });
+
+        confirmInput.addEventListener('input', function() {
+            checkPasswordMatch();
+            validateForm();
+        });
+
+        // Form submission handling
+        form.addEventListener('submit', function(e) {
+            const password = passwordInput.value;
+            const confirm = confirmInput.value;
+            
+            // Validate one more time before submission
+            if (password !== '' && password !== confirm) {
+                e.preventDefault();
+                
+                // Add shake animation to form
+                form.classList.add('shake');
+                setTimeout(() => form.classList.remove('shake'), 500);
+                
+                alert('Passwords do not match. Please check your entries.');
+                confirmInput.focus();
+                return false;
+            }
+            
+            if (password !== '' && password.length < 8) {
+                e.preventDefault();
+                
+                form.classList.add('shake');
+                setTimeout(() => form.classList.remove('shake'), 500);
+                
+                alert('Password must be at least 8 characters long.');
+                passwordInput.focus();
+                return false;
+            }
+            
+            // Show loading state
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Applying...';
+            saveBtn.disabled = true;
+            
+            // Confirm action
+            if (password === '' && confirm === '') {
+                if (!confirm('Are you sure you want to remove password protection? This will make your router configuration accessible to anyone on the network.')) {
+                    e.preventDefault();
+                    saveBtn.innerHTML = '<i class="fas fa-save"></i> Set Password Protection';
+                    saveBtn.disabled = false;
+                    return false;
+                }
+            } else {
+                if (!confirm('Set password protection for the router interface?')) {
+                    e.preventDefault();
+                    saveBtn.innerHTML = '<i class="fas fa-save"></i> Set Password Protection';
+                    saveBtn.disabled = false;
+                    return false;
+                }
+            }
+        });
+
+        // Initialize form state
+        document.addEventListener('DOMContentLoaded', function() {
+            validateForm();
+            
+            // Add focus effects
+            const inputs = document.querySelectorAll('.form-control');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.style.transform = 'scale(1.02)';
+                    this.parentElement.style.transition = 'transform 0.2s ease';
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.parentElement.style.transform = 'scale(1)';
+                });
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                window.location.href = '/';
+            }
+            
+            if (e.ctrlKey && e.key === 'Enter') {
+                if (!saveBtn.disabled) {
+                    form.submit();
+                }
+            }
+        });
+
+        // Add password visibility toggle
+        function addPasswordToggle(inputId) {
+            const input = document.getElementById(inputId);
+            const container = input.parentElement;
+            
+            const toggleBtn = document.createElement('button');
+            toggleBtn.type = 'button';
+            toggleBtn.className = 'password-toggle-btn';
+            toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
+            toggleBtn.style.cssText = `
+                position: absolute;
+                right: 15px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                color: #6c757d;
+                cursor: pointer;
+                padding: 5px;
+                border-radius: 3px;
+                transition: color 0.3s ease;
+            `;
+            
+            container.style.position = 'relative';
+            container.appendChild(toggleBtn);
+            
+            toggleBtn.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.className = 'fas fa-eye-slash';
+                } else {
+                    input.type = 'password';
+                    icon.className = 'fas fa-eye';
+                }
+            });
+            
+            toggleBtn.addEventListener('mouseenter', function() {
+                this.style.color = '#4facfe';
+            });
+            
+            toggleBtn.addEventListener('mouseleave', function() {
+                this.style.color = '#6c757d';
+            });
+        }
+
+        // Add password toggles to both inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            addPasswordToggle('lockpass');
+            addPasswordToggle('lockpass2');
+        });
+
+        // Auto-save draft (optional feature)
+        let draftTimer;
+        function saveDraft() {
+            const password = passwordInput.value;
+            if (password.length > 0) {
+                localStorage.setItem('lockPasswordDraft', 'true');
+            } else {
+                localStorage.removeItem('lockPasswordDraft');
+            }
+        }
+
+        passwordInput.addEventListener('input', function() {
+            clearTimeout(draftTimer);
+            draftTimer = setTimeout(saveDraft, 1000);
+        });
+
+        // Show warning if user has unsaved changes
+        window.addEventListener('beforeunload', function(e) {
+            const password = passwordInput.value;
+            const confirm = confirmInput.value;
+            
+            if (password.length > 0 || confirm.length > 0) {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        });
+    </script>
 </body>
 
 </html>

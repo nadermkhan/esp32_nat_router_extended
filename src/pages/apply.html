@@ -1,29 +1,338 @@
 <!DOCTYPE html>
-<html lang=en>
+<html lang="en">
 
 <head>
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <meta http-equiv="refresh" content="3; url=%s/">
+    <title>Applying Changes - ESP32 NAT Router</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    <head>
-        <link rel="shortcut icon" type=image/x-icon href=favicon.ico>
-        <meta charset=utf-8>
-        <meta http-equiv=X-UA-Compatible content="IE=edge">
-        <meta name=viewport content="width=device-width, initial-scale=1">
-        <link rel=stylesheet href=styles-67aa3b0203355627b525be2ea57be7bf.css>
-        <meta http-equiv=refresh content="3; url=%s/">
-        <title>Apply changes</title>
-    </head>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px 30px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 50px 30px;
+        }
+
+        .status-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
+
+        .status-icon i {
+            font-size: 2.5rem;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(79, 172, 254, 0.7);
+            }
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(79, 172, 254, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(79, 172, 254, 0);
+            }
+        }
+
+        .message {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .message h2 {
+            color: #856404;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .message p {
+            color: #856404;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .progress-container {
+            margin: 30px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 10px;
+            animation: loading 3s ease-in-out;
+        }
+
+        @keyframes loading {
+            0% {
+                width: 0%;
+            }
+            100% {
+                width: 100%;
+            }
+        }
+
+        .countdown {
+            font-size: 1.1rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .countdown .time {
+            color: #4facfe;
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+        .steps {
+            text-align: left;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .steps h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .step:last-child {
+            border-bottom: none;
+        }
+
+        .step-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .step.completed .step-icon {
+            background: #28a745;
+        }
+
+        .step.active .step-icon {
+            background: #4facfe;
+            animation: pulse-small 1.5s infinite;
+        }
+
+        .step.pending .step-icon {
+            background: #6c757d;
+        }
+
+        @keyframes pulse-small {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .step-text {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .step.active .step-text {
+            color: #333;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .content {
+                padding: 40px 20px;
+            }
+            
+            .message h2 {
+                font-size: 1.2rem;
+            }
+            
+            .status-icon {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .status-icon i {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <div class=container>
-        <div class="row text-center">
-            <h1>ESP32 NAT Router Config</h1>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-wifi"></i> ESP32 NAT Router</h1>
+            <div class="subtitle">Configuration Management</div>
         </div>
-        <div class="alert alert-warning mt-2 text-center" role=alert>
-            <h2>The new settings have been applied and the device will be restarted.<br>Wait until the config page is
-                reloaded...</h2>
+        
+        <div class="content">
+            <div class="status-icon">
+                <i class="fas fa-cog fa-spin"></i>
+            </div>
+            
+            <div class="message">
+                <h2><i class="fas fa-exclamation-triangle"></i> Applying Configuration Changes</h2>
+                <p>The new settings have been applied successfully and the device is now restarting to implement the changes.</p>
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="countdown">
+                    Redirecting in <span class="time" id="countdown">3</span> seconds...
+                </div>
+            </div>
+            
+            <div class="steps">
+                <h3><i class="fas fa-list-ol"></i> Process Status</h3>
+                <div class="step completed">
+                    <div class="step-icon">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="step-text">Configuration validated and saved</div>
+                </div>
+                <div class="step active">
+                    <div class="step-icon">
+                        <i class="fas fa-sync-alt fa-spin"></i>
+                    </div>
+                    <div class="step-text">Device restarting with new settings</div>
+                </div>
+                <div class="step pending">
+                    <div class="step-icon">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="step-text">Redirecting to configuration page</div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <script>
+        // Enhanced countdown with visual feedback
+        let timeLeft = 3;
+        const countdownElement = document.getElementById('countdown');
+        const steps = document.querySelectorAll('.step');
+        
+        function updateCountdown() {
+            countdownElement.textContent = timeLeft;
+            
+            // Update step status based on countdown
+            if (timeLeft <= 2) {
+                steps[1].classList.remove('active');
+                steps[1].classList.add('completed');
+                steps[1].querySelector('.step-icon').innerHTML = '<i class="fas fa-check"></i>';
+                
+                steps[2].classList.remove('pending');
+                steps[2].classList.add('active');
+            }
+            
+            if (timeLeft > 0) {
+                timeLeft--;
+                setTimeout(updateCountdown, 1000);
+            }
+        }
+        
+        // Start countdown when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(updateCountdown, 1000);
+        });
+        
+        // Add some visual feedback for the redirect
+        setTimeout(function() {
+            document.body.style.opacity = '0.8';
+            document.body.style.transition = 'opacity 0.5s ease';
+        }, 2500);
+    </script>
 </body>
 
 </html>

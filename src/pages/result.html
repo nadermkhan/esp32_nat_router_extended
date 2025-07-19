@@ -1,33 +1,985 @@
 <!DOCTYPE html>
-<html lang=en>
+<html lang="en">
 
 <head>
-    <link rel="shortcut icon" type=image/x-icon href=favicon.ico>
-    <meta charset=utf-8>
-    <meta http-equiv=X-UA-Compatible content="IE=edge">
-    <meta name=viewport content="width=device-width, initial-scale=1">
-    <link rel=stylesheet href=styles-67aa3b0203355627b525be2ea57be7bf.css>
-    <title>Scan</title>
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>WiFi Scan Results - ESP32 NAT Router</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .scan-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-container {
+            position: relative;
+            flex: 1;
+            max-width: 300px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 45px 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .filter-btn.active {
+            background: #4facfe;
+            border-color: #4facfe;
+            color: white;
+        }
+
+        .filter-btn:hover {
+            border-color: #4facfe;
+            background: rgba(79, 172, 254, 0.1);
+        }
+
+        .networks-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .networks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .networks-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sort-dropdown {
+            padding: 8px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .networks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .network-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .network-card:hover {
+            border-color: #4facfe;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.15);
+        }
+
+        .network-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .network-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+
+        .network-security {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .security-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .security-open {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .security-wep {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .security-wpa {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .signal-strength {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .signal-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 20px;
+        }
+
+        .signal-bar {
+            width: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .signal-bar.active {
+            background: #28a745;
+        }
+
+        .signal-bar:nth-child(1) { height: 25%; }
+        .signal-bar:nth-child(2) { height: 50%; }
+        .signal-bar:nth-child(3) { height: 75%; }
+        .signal-bar:nth-child(4) { height: 100%; }
+
+        .signal-text {
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .network-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .detail-icon {
+            color: #4facfe;
+            width: 16px;
+        }
+
+        .network-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #4facfe;
+            color: #4facfe;
+        }
+
+        .btn-outline:hover {
+            background: #4facfe;
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3);
+        }
+
+        .btn-light {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-light:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+
+        .empty-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .empty-message {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e9ecef;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .controls-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-container {
+                max-width: none;
+            }
+            
+            .networks-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .network-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .scan-stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        /* Animation for new network cards */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .network-card.new {
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        /* Pulse animation for strong signals */
+        .signal-excellent .signal-bar.active {
+            animation: pulse-signal 2s infinite;
+        }
+
+        @keyframes pulse-signal {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
 </head>
 
 <body>
-    <div class=container>
-        <div class="row text-center">
-            <h1>SSID Scan</h1>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-wifi"></i>
+                WiFi Scan Results
+            </h1>
+            <div class="subtitle">Available networks in your area</div>
+            <div class="scan-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="total-networks">0</span>
+                    <span class="stat-label">Networks Found</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="open-networks">0</span>
+                    <span class="stat-label">Open Networks</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="secure-networks">0</span>
+                    <span class="stat-label">Secured Networks</span>
+                </div>
+            </div>
         </div>
-        <table class="table table-striped">
-            <thead class="text-center fw-bold">
-                <tr>
-                    <th class=fw-bold>SSID</th>
-                    <th class=fw-bold>Quality</th>
-                    <th class=fw-bold>Action</th>
-                </tr>
-            </thead>
-            <tbody class=text-center> %s </tbody>
-        </table>
-        <div class="form-group row col-4 offset-4 mt-2"> <a href=/scan class="btn btn-warning">Refresh</a> </div>
-        <div class="form-group row col-4 offset-4 mt-5"> <a href=/ class="btn btn-light">Back</a> </div>
+        
+        <div class="content">
+            <div class="controls-bar">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search networks...">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+                
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all">
+                        <i class="fas fa-list"></i> All
+                    </button>
+                    <button class="filter-btn" data-filter="open">
+                        <i class="fas fa-unlock"></i> Open
+                    </button>
+                                        <button class="filter-btn" data-filter="secure">
+                        <i class="fas fa-lock"></i> Secured
+                    </button>
+                    <button class="filter-btn" data-filter="strong">
+                        <i class="fas fa-signal"></i> Strong Signal
+                    </button>
+                </div>
+            </div>
+
+            <div class="networks-container">
+                <div class="networks-header">
+                    <div class="networks-title">
+                        <i class="fas fa-broadcast-tower"></i>
+                        Detected Networks
+                    </div>
+                    <select class="sort-dropdown" id="sortSelect">
+                        <option value="signal">Sort by Signal Strength</option>
+                        <option value="name">Sort by Name</option>
+                        <option value="security">Sort by Security</option>
+                    </select>
+                </div>
+
+                <div class="networks-grid" id="networksGrid">
+                    <!-- Networks will be populated here -->
+                    %s
+                </div>
+
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-wifi-slash"></i>
+                    </div>
+                    <div class="empty-title">No Networks Found</div>
+                    <div class="empty-message">
+                        No WiFi networks match your current filter criteria.<br>
+                        Try adjusting your search or filter settings.
+                    </div>
+                    <button class="btn btn-primary" onclick="clearFilters()">
+                        <i class="fas fa-refresh"></i>
+                        Clear Filters
+                    </button>
+                </div>
+
+                <div class="loading-overlay" id="loadingOverlay">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <a href="/scan" class="btn btn-warning">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh Scan
+                </a>
+                <a href="/" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Configuration
+                </a>
+            </div>
+        </div>
     </div>
+
+    <script>
+        let allNetworks = [];
+        let filteredNetworks = [];
+        let currentFilter = 'all';
+        let currentSort = 'signal';
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            parseNetworkData();
+            updateStats();
+            setupEventListeners();
+            renderNetworks();
+        });
+
+        function parseNetworkData() {
+            // Parse the network data from the server-rendered content
+            const networkCards = document.querySelectorAll('.network-card');
+            allNetworks = Array.from(networkCards).map(card => {
+                return {
+                    element: card,
+                    name: card.querySelector('.network-name')?.textContent || 'Unknown',
+                    signal: parseInt(card.dataset.signal) || 0,
+                    security: card.dataset.security || 'unknown',
+                    quality: card.dataset.quality || 'poor'
+                };
+            });
+            filteredNetworks = [...allNetworks];
+        }
+
+        function updateStats() {
+            const total = allNetworks.length;
+            const open = allNetworks.filter(n => n.security === 'open').length;
+            const secure = total - open;
+
+            document.getElementById('total-networks').textContent = total;
+            document.getElementById('open-networks').textContent = open;
+            document.getElementById('secure-networks').textContent = secure;
+
+            // Animate the numbers
+            animateNumbers();
+        }
+
+        function animateNumbers() {
+            const counters = document.querySelectorAll('.stat-number');
+            counters.forEach(counter => {
+                const target = parseInt(counter.textContent);
+                let current = 0;
+                const increment = target / 20;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        counter.textContent = target;
+                        clearInterval(timer);
+                    } else {
+                        counter.textContent = Math.floor(current);
+                    }
+                }, 50);
+            });
+        }
+
+        function setupEventListeners() {
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', debounce(handleSearch, 300));
+
+            // Filter buttons
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', () => handleFilter(btn.dataset.filter));
+            });
+
+            // Sort dropdown
+            const sortSelect = document.getElementById('sortSelect');
+            sortSelect.addEventListener('change', () => handleSort(sortSelect.value));
+
+            // Network card interactions
+            setupNetworkCardEvents();
+        }
+
+        function setupNetworkCardEvents() {
+            const networkCards = document.querySelectorAll('.network-card');
+            networkCards.forEach(card => {
+                // Add click to select functionality
+                card.addEventListener('click', function(e) {
+                    if (!e.target.closest('.btn')) {
+                        this.classList.toggle('selected');
+                        updateSelectedStyle(this);
+                    }
+                });
+
+                // Add connect button functionality
+                const connectBtn = card.querySelector('.btn-primary');
+                if (connectBtn) {
+                    connectBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        handleConnect(card);
+                    });
+                }
+
+                // Add details button functionality
+                const detailsBtn = card.querySelector('.btn-outline');
+                if (detailsBtn) {
+                    detailsBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showNetworkDetails(card);
+                    });
+                }
+            });
+        }
+
+        function updateSelectedStyle(card) {
+            if (card.classList.contains('selected')) {
+                card.style.borderColor = '#28a745';
+                card.style.background = 'rgba(40, 167, 69, 0.05)';
+            } else {
+                card.style.borderColor = '#e9ecef';
+                card.style.background = 'white';
+            }
+        }
+
+        function handleSearch(e) {
+            const query = e.target.value.toLowerCase();
+            filteredNetworks = allNetworks.filter(network => 
+                network.name.toLowerCase().includes(query)
+            );
+            applyCurrentFilter();
+            renderNetworks();
+        }
+
+        function handleFilter(filter) {
+            currentFilter = filter;
+            
+            // Update active filter button
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+
+            applyCurrentFilter();
+            renderNetworks();
+        }
+
+        function applyCurrentFilter() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            
+            filteredNetworks = allNetworks.filter(network => {
+                // Apply search filter
+                if (searchQuery && !network.name.toLowerCase().includes(searchQuery)) {
+                    return false;
+                }
+
+                // Apply category filter
+                switch (currentFilter) {
+                    case 'open':
+                        return network.security === 'open';
+                    case 'secure':
+                        return network.security !== 'open';
+                    case 'strong':
+                        return network.signal > -50; // Strong signal threshold
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        function handleSort(sortBy) {
+            currentSort = sortBy;
+            
+            filteredNetworks.sort((a, b) => {
+                switch (sortBy) {
+                    case 'name':
+                        return a.name.localeCompare(b.name);
+                    case 'security':
+                        return a.security.localeCompare(b.security);
+                    case 'signal':
+                    default:
+                        return b.signal - a.signal; // Descending order for signal
+                }
+            });
+
+            renderNetworks();
+        }
+
+        function renderNetworks() {
+            const grid = document.getElementById('networksGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (filteredNetworks.length === 0) {
+                grid.style.display = 'none';
+                emptyState.style.display = 'block';
+            } else {
+                grid.style.display = 'grid';
+                emptyState.style.display = 'none';
+
+                // Clear and repopulate grid
+                grid.innerHTML = '';
+                filteredNetworks.forEach((network, index) => {
+                    const card = network.element.cloneNode(true);
+                    card.style.animationDelay = `${index * 0.1}s`;
+                    card.classList.add('new');
+                    grid.appendChild(card);
+                });
+
+                // Re-setup event listeners for new cards
+                setupNetworkCardEvents();
+            }
+        }
+
+        function handleConnect(card) {
+            const networkName = card.querySelector('.network-name').textContent;
+            const security = card.dataset.security;
+
+            if (security === 'open') {
+                if (confirm(`Connect to open network "${networkName}"?`)) {
+                    connectToNetwork(networkName, '');
+                }
+            } else {
+                showPasswordDialog(networkName);
+            }
+        }
+
+        function showPasswordDialog(networkName) {
+            const password = prompt(`Enter password for "${networkName}":`);
+            if (password !== null) {
+                connectToNetwork(networkName, password);
+            }
+        }
+
+        function connectToNetwork(ssid, password) {
+            // Show loading state
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.classList.add('show');
+
+            // Simulate connection process
+            setTimeout(() => {
+                // In a real implementation, this would make an API call
+                alert(`Attempting to connect to "${ssid}"...`);
+                loadingOverlay.classList.remove('show');
+                
+                // Redirect to configuration page
+                window.location.href = '/';
+            }, 2000);
+        }
+
+        function showNetworkDetails(card) {
+            const networkName = card.querySelector('.network-name').textContent;
+            const signal = card.dataset.signal;
+            const security = card.dataset.security;
+            const quality = card.dataset.quality;
+
+            const details = `
+                Network: ${networkName}
+                Signal Strength: ${signal} dBm
+                Security: ${security.toUpperCase()}
+                Quality: ${quality}
+                
+                Additional technical details would be shown here in a real implementation.
+            `;
+
+            alert(details);
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            currentFilter = 'all';
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector('[data-filter="all"]').classList.add('active');
+            
+            filteredNetworks = [...allNetworks];
+            renderNetworks();
+        }
+
+        // Utility function for debouncing
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Auto-refresh functionality
+        function setupAutoRefresh() {
+            let refreshInterval;
+            
+            const startAutoRefresh = () => {
+                refreshInterval = setInterval(() => {
+                    if (document.visibilityState === 'visible') {
+                        // Auto-refresh every 30 seconds when page is visible
+                        window.location.reload();
+                    }
+                }, 30000);
+            };
+
+            const stopAutoRefresh = () => {
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                }
+            };
+
+            // Start auto-refresh
+            startAutoRefresh();
+
+            // Stop auto-refresh when page is hidden
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    stopAutoRefresh();
+                } else {
+                    startAutoRefresh();
+                }
+            });
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'r' || e.key === 'R') {
+                if (e.ctrlKey || e.metaKey) {
+                    return; // Allow normal refresh
+                }
+                e.preventDefault();
+                window.location.href = '/scan';
+            }
+            
+            if (e.key === 'Escape') {
+                window.location.href = '/';
+            }
+            
+            if (e.key === '/') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
+        });
+
+        // Initialize auto-refresh
+        setupAutoRefresh();
+
+        // Add visual enhancements
+        function enhanceNetworkCards() {
+            const cards = document.querySelectorAll('.network-card');
+            cards.forEach(card => {
+                const signal = parseInt(card.dataset.signal) || 0;
+                const signalBars = card.querySelectorAll('.signal-bar');
+                
+                // Update signal bars based on strength
+                let activeBars = 0;
+                if (signal > -30) activeBars = 4;
+                else if (signal > -50) activeBars = 3;
+                else if (signal > -70) activeBars = 2;
+                else if (signal > -90) activeBars = 1;
+
+                signalBars.forEach((bar, index) => {
+                    if (index < activeBars) {
+                        bar.classList.add('active');
+                    }
+                });
+
+                // Add quality indicators
+                if (signal > -30) {
+                    card.classList.add('signal-excellent');
+                }
+            });
+        }
+
+        // Enhance cards after DOM is loaded
+        document.addEventListener('DOMContentLoaded', enhanceNetworkCards);
+    </script>
 </body>
 
 </html>

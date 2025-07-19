@@ -1,216 +1,630 @@
 <!DOCTYPE html>
-<html lang=en>
+<html lang="en">
 
 <head>
-        <link href=favicon.ico rel="shortcut icon" type=image/x-icon>
-        <meta charset=utf-8>
-        <meta content="IE=edge" http-equiv=X-UA-Compatible>
-        <meta content="width=device-width, initial-scale=1" name=viewport>
-        <link href=styles-67aa3b0203355627b525be2ea57be7bf.css rel=stylesheet>
-        <title>Advanced</title>
+    <link href="favicon.ico" rel="shortcut icon" type="image/x-icon">
+    <meta charset="utf-8">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Advanced Configuration - ESP32 NAT Router</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4facfe;
+        }
+
+        .section h2 {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-row.single {
+            grid-template-columns: 1fr;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .form-control {
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .form-select {
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 0;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4facfe;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .radio-option:hover {
+            border-color: #4facfe;
+            background: #f8f9fa;
+        }
+
+        .radio-option.selected {
+            border-color: #4facfe;
+            background: rgba(79, 172, 254, 0.05);
+        }
+
+        .radio-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #4facfe;
+        }
+
+        .radio-option label {
+            margin: 0;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .custom-input {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border-left: 4px solid;
+        }
+
+        .alert-light {
+            background: #f8f9fa;
+            border-left-color: #6c757d;
+            color: #495057;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            color: #856404;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+
+        .current-info {
+            background: rgba(79, 172, 254, 0.1);
+            color: #0066cc;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3);
+        }
+
+        .btn-light {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-light:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-group {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
 </head>
 
 <body>
-        <div class=container>
-                <div class="row text-center p-3">
-                        <h1>Advanced configuration</h1>
-                </div>
-                <form action=apply class=p-2 method=POST> <input name=func type=hidden value=advanced>
-                        <h2>Misc</h2>
-
-                        <div class="form-group row mt-2">
-                                <div class="col-9" style="padding-left: 0;">
-                                        <label for="hostname">Hostname</label>
-                                        <input class="form-control mt-2" id="hostname" maxlength="250" name="hostname"
-                                                placeholder="Hostname, will be regenerated if empty" type="text"
-                                                value="%s" />
-                                </div>
-                                <div class="col-3" style="padding-right: 0;">
-                                        <label for="octet">Third octet</label>
-                                        <input class="form-control mt-2" type="number" id="octet" maxlength="3"
-                                                name="octet" placeholder="4" type="text" value="%d" min="0" max="255" />
-                                </div>
-                                <div class="alert alert-light mt-2" role=alert>The hostname is a user-friendly label
-                                        assigned to the router to make it easier to identify and access on a network.
-                                        <br />
-                                        The third octet instructs the router which IP address to use. Valid values range
-                                        from 0 to 255 and are used in the third position within the IP address. This
-                                        changes both the IP of the router and the IP of all connected clients.
-                                </div>
-
-                        </div>
-                        <div class="form-group row mt-2">
-                                <div class="col-6" style="padding-left: 0;">
-                                        <label for="txpower">Tx power/ WiFi range</label>
-                                        <select class="form-select mt-2" aria-label="Select the transmission power"
-                                                title="Select the transmission power" name="txpower" id="txpower">
-                                                <option value="8" %s>Low</option>
-                                                <option value="52" %s>Medium</option>
-                                                <option value="80" %s>High</option>
-                                        </select>
-                                </div>
-                                <div class="col-6" style="padding-right: 0;">
-                                        <label for="bandwith">Bandwith</label>
-                                        <select class="form-select mt-2" aria-label="Select the bandwith"
-                                                title="Select the bandwith" name="bandwith" id="bandwith">
-                                                <option value="0" %s>20 Mhz (high)</option>
-                                                <option value="1" %s>40 Mhz (low)</option>
-                                        </select>
-                                </div>
-
-                                <div class="alert alert-light mt-2" role=alert>
-                                        The transmission power determines how strong the AP (Access Point) network is.
-                                        Higher values mean greater range.
-                                        <br />
-                                        The bandwidth affects the speed of the connection between the router and
-                                        clients. The higher the value, the slower it
-                                        becomes. Higher values also imply greater stability, especially in the
-                                        case of frequent network interruptions.
-
-                                </div>
-
-                        </div>
-                        <div class="form-group row mt-2">
-                                <div class="form-check form-switch"> <input class=form-check-input type=checkbox
-                                                id=ledenabled name=ledenabled %s> <label class=form-check-label
-                                                for=ledenabled>LED enabled</label>
-                                </div>
-                                <div class="alert alert-light mt-2" role=alert> This enables or disables the on board
-                                        LED, if available.
-                                        Uncheck this option for less power consumption and less disturbing blinking. Of
-                                        course, you will not
-                                        be able to interpret the number of connected devices anymore. </div>
-                        </div>
-                        <div class="form-group row mt-2">
-                                <div class="form-check form-switch"> <input class=form-check-input type=checkbox
-                                                id=keepalive name=keepalive %s> <label class=form-check-label
-                                                for=keepalive>Keep connection
-                                                alive</label>
-                                </div>
-                                <div class="alert alert-light mt-2" role=alert> Check this option for networks with a
-                                        forced disconnect
-                                        after some inactivity. This will call <a
-                                                href=https:www.startpage.com>startpage.com</a> every 5
-                                        minutes with a small footprint to keep the connection alive. </div>
-                        </div>
-                        <div class="form-group row mt-2">
-                                <div class="form-check form-switch"> <input class=form-check-input type=checkbox
-                                                id=natenabled name=natenabled %s> <label class=form-check-label
-                                                for=natenabled>NAT enabled</label>
-                                </div>
-                                <div class="alert alert-warning mt-2" role=alert> This enables or disables NAT(Network
-                                        Address Translation). If disabled, the ESP32 will not perform automatic
-                                        translation of IP addresses and ports for connected devices when they establish
-                                        a connection to the internet. These routes need to be configured separately, for
-                                        example, on the router.</div>
-                        </div>
-                        <div class="form-group row mt-2 ">
-                                <div class="form-check form-switch"> <input class=form-check-input type=checkbox
-                                                id=wsenabled name=wsenabled checked> <label class=form-check-label
-                                                for=wsenabled>Webserver
-                                                enabled</label>
-                                </div>
-                                <div class="alert alert-danger mt-2" role=alert> This enables or disables the webserver.
-                                        Disabling it increases security but also means that the device can no longer be
-                                        configured through the web browser.</div>
-                        </div>
-
-                        <h2>DNS override</h2> <span class=text-info>Your current DNS is: %s</span>
-                        <div class="form-group row mt-2">
-                                <div class=form-check> <input class=form-check-input type=radio name=dns id=default
-                                                value %s> <label class=form-check-label for=default> Default from uplink
-                                                WiFi-network</label> </div>
-                                <div class="form-check mt-2"> <input class=form-check-input type=radio name=dns
-                                                id=cloudflare value=1.1.1.1 %s> <label class=form-check-label
-                                                for=cloudflare> 1.1.1.1 (Cloudflare)
-                                        </label>
-                                </div>
-                                <div class="form-check mt-2"> <input class=form-check-input type=radio name=dns
-                                                id=adguard value=94.140.14.14 %s> <label class=form-check-label
-                                                for=adguard> 94.140.14.14 (AdGuard)
-                                        </label> </div>
-                                <div class="form-check mt-2"> <input class=form-check-input type=radio name=dns
-                                                id=custom value=custom %s> <label class=form-check-label for=custom>
-                                                Custom </label> <input class="form-control mt-2" id=dnsip maxlength=15
-                                                name=dnsip placeholder="IPv4 address in format 123.123.123.123"
-                                                type=text value=%s> </div>
-                                <div class="alert alert-warning mt-2" role=alert>This overrides the DNS server of the
-                                        uplink network. Changing this results in more privacy (Cloudflare) or the
-                                        ability to block advertisements(AdGuard).
-                                        Use this with caution if you have to register/login to the uplink network. This
-                                        can lead to unreachable sites. After login or registration this can be
-                                        reactivated. If you define an invalid custom DNS
-                                        server, the value will be set back to default one.</div>
-                        </div>
-                        <h2>MAC override</h2> <span class=text-info>Your current MAC address is: <span
-                                        style="text-transform: uppercase;">%s</span></span>
-                        <div class="form-group row mt-2">
-                                <div class=form-check> <input class=form-check-input type=radio id=defaultmac
-                                                name=custommac value=default %s> <label class=form-check-label
-                                                for=defaultmac> Default <span
-                                                        style="text-transform: uppercase;">(%s)</span> </label> </div>
-                                <div class="form-check mt-2"> <input class=form-check-input type=radio id=randomMac
-                                                name=custommac value=random %s> <label class=form-check-label
-                                                for=randomMac>Random<span style="text-transform: uppercase;">
-                                                        (%sXX)</span>.</label> </div>
-                                <div class="form-check mt-2"> <input class=form-check-input type=radio id=custommac
-                                                name=custommac value=custom %s> <label class=form-check-label
-                                                for=custommac> Custom </label> <input class="form-control mt-2" id=mac
-                                                maxlength=17 name=macaddress
-                                                placeholder="MAC address in format AB:BC:DE:F1:23:45" type=text
-                                                value=%s> </div>
-                                <div class="alert alert-warning mt-2" role=alert>This overrides the MAC address of the
-                                        device. Changing
-                                        this can be used for networks with MAC limitations. For example, when the
-                                        network allows only a limited number of devices per access for specific MACs.
-                                        The value will be
-                                        resetted to the default, if you define an invalid address. To
-                                        bypass time by device limits in some WiFis (e.g. 30min free per device and day)
-                                        you can select "Random". This will change the last part of the default MAC on
-                                        every reboot.
-                                </div>
-                        </div>
-                        <h2>Netmask override</h2> <span class=text-info>Your current netmask is: <span
-                                        style="text-transform: uppercase;">%s</span></span>
-                        <div class="form-group row mt-2">
-                                <div class=form-check> <input class=form-check-input type=radio id=classc name=netmask
-                                                value=classc %s>
-                                        <label class=form-check-label for=classc> Class C (255.255.255.0). ESP 32 NAT
-                                                Router address is
-                                                192.168.%d.1.</label>
-                                </div>
-                                <div class="form-check mt-2"> <input class=form-check-input type=radio id=classb
-                                                name=netmask value=classb %s> <label class=form-check-label for=classb>
-                                                Class B (255.255.0.0). ESP 32 NAT
-                                                Router address is 172.16.%d.1.</label> </div>
-                                <div class="form-check mt-2"> <input class=form-check-input type=radio id=classa
-                                                name=netmask value=classa %s> <label class=form-check-label for=classa>
-                                                Class A (255.0.0.0). ESP 32 NAT
-                                                Router address is 10.0.%d.1.</label> </div>
-                                <div class="form-check mt-2"> <input class=form-check-input type=radio id=custommask
-                                                name=netmask value=custom %s> <label class=form-check-label
-                                                for=custommask> Custom </label> <input class="form-control mt-2" id=mask
-                                                maxlength=15 name=mask
-                                                placeholder="IPv4 address in format 255.255.255.255" type=text value=%s>
-                                </div>
-                                <div class="alert alert-warning mt-2" role=alert>This overrides the netmask of the
-                                        device and can be
-                                        used if upstream network uses a non class C mask. The setting can be used for
-                                        communication with
-                                        clients connected to the upstream network. This changes both the IP of the
-                                        router and the IP of all connected clients.</div>
-                        </div>
-                        <div class="form-group row col-4 offset-4 mt-4"> <input class="btn btn-primary" type=submit
-                                        value="Apply"> </div> <input type=hidden value=x name=x>
-                </form>
-                <form action=reset method=GET>
-                        <div class="form-group row col-4 offset-4 mt-5"> <input class="btn btn-warning" type=submit
-                                        value="Erase flash"> </div>
-                </form>
-                <div class="form-group row col-4 offset-4 mt-5"> <a href=/ class="btn btn-light">Back</a> </div>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-cogs"></i> Advanced Configuration</h1>
         </div>
-        <script src=jquery-8a1045d9cbf50b52a0805c111ba08e94.js></script>
-        <script>         function refreshRadios() { $('input[value="custom"]').each(function () { $(this).next().next().prop('disabled', $(this).prop('checked') ? false : true); }) }; $('input[type=radio]').change(function () { refreshRadios(); }); $(document).ready(function () { refreshRadios(); });          </script>
+        
+        <div class="content">
+            <form action="apply" method="POST">
+                <input name="func" type="hidden" value="advanced">
+                
+                <!-- Misc Section -->
+                <div class="section">
+                    <h2><i class="fas fa-sliders-h"></i> Miscellaneous Settings</h2>
+                    
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="hostname">Hostname</label>
+                            <input class="form-control" id="hostname" maxlength="250" name="hostname"
+                                   placeholder="Hostname, will be regenerated if empty" type="text" value="%s">
+                        </div>
+                        <div class="form-field">
+                            <label for="octet">Third Octet</label>
+                            <input class="form-control" type="number" id="octet" maxlength="3"
+                                   name="octet" placeholder="4" value="%d" min="0" max="255">
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-light">
+                        <strong>Hostname:</strong> A user-friendly label assigned to the router to make it easier to identify and access on a network.<br>
+                        <strong>Third Octet:</strong> Instructs the router which IP address to use. Valid values range from 0 to 255 and are used in the third position within the IP address.
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="txpower">Transmission Power / WiFi Range</label>
+                            <select class="form-select" name="txpower" id="txpower">
+                                <option value="8" %s>Low</option>
+                                <option value="52" %s>Medium</option>
+                                <option value="80" %s>High</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="bandwith">Bandwidth</label>
+                            <select class="form-select" name="bandwith" id="bandwith">
+                                <option value="0" %s>20 MHz (High Speed)</option>
+                                <option value="1" %s>40 MHz (High Stability)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-light">
+                        <strong>Transmission Power:</strong> Determines how strong the AP network is. Higher values mean greater range.<br>
+                        <strong>Bandwidth:</strong> Affects connection speed and stability. Higher values provide better stability but may reduce speed.
+                    </div>
+
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input type="checkbox" id="ledenabled" name="ledenabled" %s>
+                            <span class="slider"></span>
+                        </label>
+                        <label for="ledenabled">LED Enabled</label>
+                    </div>
+                    <div class="alert alert-light">
+                        Enables or disables the onboard LED. Uncheck for lower power consumption and less disturbance.
+                    </div>
+
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input type="checkbox" id="keepalive" name="keepalive" %s>
+                            <span class="slider"></span>
+                        </label>
+                        <label for="keepalive">Keep Connection Alive</label>
+                    </div>
+                    <div class="alert alert-light">
+                        Prevents forced disconnection after inactivity by pinging startpage.com every 5 minutes.
+                    </div>
+
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input type="checkbox" id="natenabled" name="natenabled" %s>
+                            <span class="slider"></span>
+                        </label>
+                        <label for="natenabled">NAT Enabled</label>
+                    </div>
+                    <div class="alert alert-warning">
+                        <strong>Warning:</strong> Disabling NAT means the ESP32 will not perform automatic IP address translation. Routes need to be configured separately.
+                    </div>
+
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input type="checkbox" id="wsenabled" name="wsenabled" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <label for="wsenabled">Webserver Enabled</label>
+                    </div>
+                    <div class="alert alert-danger">
+                        <strong>Danger:</strong> Disabling the webserver increases security but prevents web-based configuration.
+                    </div>
+                </div>
+
+                <!-- DNS Override Section -->
+                <div class="section">
+                    <h2><i class="fas fa-globe"></i> DNS Override</h2>
+                    <div class="current-info">
+                        <i class="fas fa-info-circle"></i> Your current DNS is: %s
+                    </div>
+                    
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" name="dns" id="default" value="" %s>
+                            <label for="default">Default from uplink WiFi network</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" name="dns" id="cloudflare" value="1.1.1.1" %s>
+                            <label for="cloudflare">1.1.1.1 (Cloudflare)</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" name="dns" id="adguard" value="94.140.14.14" %s>
+                            <label for="adguard">94.140.14.14 (AdGuard)</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" name="dns" id="custom" value="custom" %s>
+                            <label for="custom">Custom DNS Server</label>
+                            <input class="form-control custom-input" id="dnsip" maxlength="15" name="dnsip" 
+                                                                      placeholder="IPv4 address (e.g., 8.8.8.8)" type="text" value="%s">
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <strong>Warning:</strong> This overrides the DNS server of the uplink network. Use with caution if you need to register/login to the uplink network, as this can lead to unreachable sites.
+                    </div>
+                </div>
+
+                <!-- MAC Override Section -->
+                <div class="section">
+                    <h2><i class="fas fa-network-wired"></i> MAC Override</h2>
+                    <div class="current-info">
+                        <i class="fas fa-info-circle"></i> Your current MAC address is: <span style="text-transform: uppercase;">%s</span>
+                    </div>
+                    
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="defaultmac" name="custommac" value="default" %s>
+                            <label for="defaultmac">Default <span style="text-transform: uppercase;">(%s)</span></label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="randomMac" name="custommac" value="random" %s>
+                            <label for="randomMac">Random <span style="text-transform: uppercase;">(%sXX)</span></label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="custommac" name="custommac" value="custom" %s>
+                            <label for="custommac">Custom MAC Address</label>
+                            <input class="form-control custom-input" id="mac" maxlength="17" name="macaddress"
+                                   placeholder="MAC address (e.g., AB:BC:DE:F1:23:45)" type="text" value="%s">
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <strong>Use Cases:</strong> Override MAC address for networks with MAC limitations or to bypass time-based device limits. Random option changes the last part of the MAC on every reboot.
+                    </div>
+                </div>
+
+                <!-- Netmask Override Section -->
+                <div class="section">
+                    <h2><i class="fas fa-sitemap"></i> Netmask Override</h2>
+                    <div class="current-info">
+                        <i class="fas fa-info-circle"></i> Your current netmask is: <span style="text-transform: uppercase;">%s</span>
+                    </div>
+                    
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="classc" name="netmask" value="classc" %s>
+                            <label for="classc">Class C (255.255.255.0) - ESP32 address: 192.168.%d.1</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="classb" name="netmask" value="classb" %s>
+                            <label for="classb">Class B (255.255.0.0) - ESP32 address: 172.16.%d.1</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="classa" name="netmask" value="classa" %s>
+                            <label for="classa">Class A (255.0.0.0) - ESP32 address: 10.0.%d.1</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="custommask" name="netmask" value="custom" %s>
+                            <label for="custommask">Custom Netmask</label>
+                            <input class="form-control custom-input" id="mask" maxlength="15" name="mask"
+                                   placeholder="IPv4 netmask (e.g., 255.255.255.0)" type="text" value="%s">
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <strong>Advanced Setting:</strong> Override the netmask for communication with clients on the upstream network. This changes both router and client IP addresses.
+                    </div>
+                </div>
+
+                <input type="hidden" value="x" name="x">
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-save"></i> Apply Settings
+                    </button>
+                </div>
+            </form>
+
+            <form action="reset" method="GET">
+                <div class="button-group">
+                    <button class="btn btn-warning" type="submit">
+                        <i class="fas fa-trash-alt"></i> Erase Flash
+                    </button>
+                </div>
+            </form>
+
+            <div class="button-group">
+                <a href="/" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced radio button functionality
+        function refreshRadios() {
+            document.querySelectorAll('input[value="custom"]').forEach(function(radio) {
+                const customInput = radio.closest('.radio-option').querySelector('.custom-input');
+                if (customInput) {
+                    customInput.disabled = !radio.checked;
+                    customInput.style.opacity = radio.checked ? '1' : '0.5';
+                }
+            });
+            
+            // Update radio option styling
+            document.querySelectorAll('.radio-option').forEach(function(option) {
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio.checked) {
+                    option.classList.add('selected');
+                } else {
+                    option.classList.remove('selected');
+                }
+            });
+        }
+
+        // Add event listeners
+        document.querySelectorAll('input[type="radio"]').forEach(function(radio) {
+            radio.addEventListener('change', refreshRadios);
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshRadios();
+            
+            // Add hover effects to radio options
+            document.querySelectorAll('.radio-option').forEach(function(option) {
+                option.addEventListener('click', function() {
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio && !radio.checked) {
+                        radio.checked = true;
+                        refreshRadios();
+                    }
+                });
+            });
+        });
+
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const customDns = document.getElementById('custom');
+            const dnsIp = document.getElementById('dnsip');
+            
+            if (customDns.checked && !dnsIp.value.trim()) {
+                e.preventDefault();
+                alert('Please enter a custom DNS IP address.');
+                dnsIp.focus();
+                return false;
+            }
+            
+            const customMac = document.getElementById('custommac');
+            const macAddress = document.getElementById('mac');
+            
+            if (customMac.checked && !macAddress.value.trim()) {
+                e.preventDefault();
+                alert('Please enter a custom MAC address.');
+                macAddress.focus();
+                return false;
+            }
+            
+            const customMask = document.getElementById('custommask');
+            const mask = document.getElementById('mask');
+            
+            if (customMask.checked && !mask.value.trim()) {
+                e.preventDefault();
+                alert('Please enter a custom netmask.');
+                mask.focus();
+                return false;
+            }
+        });
+    </script>
 </body>
 
 </html>
