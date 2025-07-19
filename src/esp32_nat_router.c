@@ -873,7 +873,7 @@ void app_main(void)
     if (lock == 0)
     {
         ESP_LOGI(TAG, "Starting config web server");
-        start_webserver();
+        start_websocket_server();
     }
     else
     {

@@ -1,8 +1,9 @@
 #ifndef WEBSOCKET_SERVER_H
 #define WEBSOCKET_SERVER_H
 
-#include "../http_server.h"
+#include "esp_http_server.h"
 #include "cJSON.h"
+#include <stdbool.h>
 
 typedef struct {
     httpd_handle_t server;
